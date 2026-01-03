@@ -33,7 +33,11 @@ export async function POST(req) {
         const { data, error } = await resend.emails.send(emailOptions);
 
         if (error) {
-            return NextResponse.json({ error: error.message }, { status: 400 });
+            let message = error.message;
+            if (message.includes('domain is not verified')) {
+                message = message.split('. ')[0] + '.';
+            }
+            return NextResponse.json({ error: message }, { status: 400 });
         }
 
         // Log to sent history
