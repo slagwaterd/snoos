@@ -12,7 +12,7 @@ export async function POST(req) {
             await appendData('inbox', {
                 resendId: emailData.id,
                 from: emailData.from,
-                to: Array.isArray(emailData.to) ? emailData.to.join(\", \") : emailData.to,
+                to: Array.isArray(emailData.to) ? emailData.to.join(", ") : emailData.to,
                 subject: emailData.subject,
                 text: emailData.text,
                 html: emailData.html,

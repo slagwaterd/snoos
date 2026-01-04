@@ -194,7 +194,12 @@
     "Anne Sophie Huiberts-Simoons|SENSES Boutique Hotel & Apartments and owner at Maan Bonaire",
     "Yorrick Puts|Y.H Puts",
     "Sebastian van de Poppe|Start",
-    "Victor Bartels|hotel Cabanas La Luna in Tulum"
+    "Victor Bartels|hotel Cabanas La Luna in Tulum",
+    "Sander (Alexander) Neu|ALLNEU BV",
+    "Max Kipp|and Account Director",
+    "Andrew Ashmore|Hotel Owner",
+    "Jurriën Piekaar|Owlie Jobs & InSync Jobs & Frontrunners Agency",
+    "Patricia Knook|and yoga teacher at wego.yoga"
   ],
   "results": {
     "Etienne van Ommen|Hotel Manager": {
@@ -3374,6 +3379,86 @@
       "company": "hotel Cabanas La Luna in Tulum",
       "headline": "High impact Investor - retired partner of EY and previous owner, of hotel Cabanas La Luna in Tulum, Mexico",
       "location": "Amsterdam, Noord-Holland, Nederland",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Sander (Alexander) Neu|ALLNEU BV": {
+      "name": "Sander (Alexander) Neu",
+      "company": "ALLNEU BV",
+      "headline": "Company owner ALLNEU BV",
+      "location": "Nederland",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Max Kipp|and Account Director": {
+      "name": "Max Kipp",
+      "company": "and Account Director",
+      "headline": "Co-Owner and Account Director | LAG Travel",
+      "location": "Nederland",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "185213229"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Andrew Ashmore|Hotel Owner": {
+      "name": "Andrew Ashmore",
+      "company": "Hotel Owner",
+      "headline": "Hotel Owner/ Commercial & Marketing Leader",
+      "location": "Onbekend",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "209121228",
+        "103245194"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Jurriën Piekaar|Owlie Jobs & InSync Jobs & Frontrunners Agency": {
+      "name": "Jurriën Piekaar",
+      "company": "Owlie Jobs & InSync Jobs & Frontrunners Agency",
+      "headline": "Co-Owner bij Owlie Jobs & InSync Jobs & Frontrunners Agency - Part of Frontrunners",
+      "location": "Amsterdam, Noord-Holland, Nederland",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Patricia Knook|and yoga teacher at wego.yoga": {
+      "name": "Patricia Knook",
+      "company": "and yoga teacher at wego.yoga",
+      "headline": "Sustainability | Owner and yoga teacher at wego.yoga | Yoga",
+      "location": "Onbekend",
       "priority": "P1",
       "personalEmails": [],
       "hotelEmails": [],

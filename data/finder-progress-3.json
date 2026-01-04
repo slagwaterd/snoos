@@ -214,7 +214,12 @@
     "Willem Haegemans|Theater Hotel by HappyCulture",
     "Nele Budeners|Botanic Sanctuary Antwerp",
     "Frederik De Tey|Corinthia Grand Hotel Astoria Brussels",
-    "Sandrine Versavel|of Sales & Marketing"
+    "Sandrine Versavel|of Sales & Marketing",
+    "Claire Jeunhomme|NH Maastricht",
+    "Hotel Director NH Maastricht|NH Maastricht",
+    "Maarten S.|Divi",
+    "Carolin Hüter|of Sales & Marketing",
+    "Veerle Peeters|Antwerp Convention Bureau"
   ],
   "results": {
     "Angela Böck|presso Marry me in Italy": {
@@ -3538,6 +3543,87 @@
       "company": "of Sales & Marketing",
       "headline": "Director of Sales & Marketing, Press & PR at Botanic Sanctuary Antwerp *****S, a Leading Hotel of the World",
       "location": "Antwerpen, Vlaanderen, België",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Claire Jeunhomme|NH Maastricht": {
+      "name": "Claire Jeunhomme",
+      "company": "NH Maastricht",
+      "headline": "Hotel Director NH Maastricht",
+      "location": "Nederland",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "196127175"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Hotel Director NH Maastricht|NH Maastricht": {
+      "name": "Hotel Director NH Maastricht",
+      "company": "NH Maastricht",
+      "headline": "Huidig: Hotel Director bij NH Maastricht",
+      "location": "Onbekend",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "196127175"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Maarten S.|Divi": {
+      "name": "Maarten S.",
+      "company": "Divi",
+      "headline": "Hotel & Resort Operations | Regional Director | Corporate Executive | Multi Property at Divi",
+      "location": "Huidig: Regional Director of Operations bij Divi Resorts",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Carolin Hüter|of Sales & Marketing": {
+      "name": "Carolin Hüter",
+      "company": "of Sales & Marketing",
+      "headline": "Director of Sales & Marketing - Hotel am Steinplatz, Autograph Collection",
+      "location": "Berlijn en omgeving",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "190105123"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Veerle Peeters|Antwerp Convention Bureau": {
+      "name": "Veerle Peeters",
+      "company": "Antwerp Convention Bureau",
+      "headline": "Huidig: Director bij Antwerp Convention Bureau",
+      "location": "Onbekend",
       "priority": "P2",
       "personalEmails": [],
       "hotelEmails": [],
