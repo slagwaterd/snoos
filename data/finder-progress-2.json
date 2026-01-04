@@ -234,7 +234,22 @@
     "Shareholder Cygnus Hotel Group|Breydelhof holidaystudio's",
     "Melanie Warmerdam Goméz|of Salty.",
     "Delphine Verleye|DelphiNails",
-    "Mathieu Verschelden|Relais M"
+    "Mathieu Verschelden|Relais M",
+    "Johan Fonteyne|Correct Vastgoed",
+    "Bart De Bruycker|of Fynbos cv",
+    "Hotel Amaryllis Maldegem|BV Joly",
+    "Floor De Vlieghe|PILATES AAN ZEE",
+    "Ann Nulens|Plan Ann",
+    "Zutendaal, Vlaanderen, België|Plan Ann",
+    "Olivier Terrie|Green spaces",
+    "Company Owner|Crest",
+    "Nico Teerlinck|of HES Global Executive Search",
+    "Kenneth Verbrugge|TUI Belgium",
+    "Franz Bucher|and director of the Gallery Bucher",
+    "Ceres Bonny|Hotel Karel De Stoute Brugge",
+    "North Sea Aviation Center|Hotel Karel De Stoute Brugge",
+    "Patrick Annys|Free lance catering events",
+    "Meerhout, Vlaanderen, België|Free lance catering events Jeroen Brugman • 3de+"
   ],
   "results": {
     "Dominika Dhondt|Napoleon Games Grand Casino Knokke": {
@@ -3871,6 +3886,252 @@
       "company": "Relais M",
       "headline": "Owner bij Relais M",
       "location": "Charleroi en omgeving",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Johan Fonteyne|Correct Vastgoed": {
+      "name": "Johan Fonteyne",
+      "company": "Correct Vastgoed",
+      "headline": "Owner at Correct Vastgoed",
+      "location": "Eernegem, Vlaanderen, België",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Bart De Bruycker|of Fynbos cv": {
+      "name": "Bart De Bruycker",
+      "company": "of Fynbos cv",
+      "headline": "Owner of Fynbos cv",
+      "location": "Oostende, Vlaanderen, België",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Hotel Amaryllis Maldegem|BV Joly": {
+      "name": "Hotel Amaryllis Maldegem",
+      "company": "BV Joly",
+      "headline": "Huidig: Owner bij BV Joly-Elmima",
+      "location": "Onbekend",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "190176244"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Floor De Vlieghe|PILATES AAN ZEE": {
+      "name": "Floor De Vlieghe",
+      "company": "PILATES AAN ZEE",
+      "headline": "Pilates teacher and owner at PILATES AAN ZEE",
+      "location": "Oostende, Vlaanderen, België",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Ann Nulens|Plan Ann": {
+      "name": "Ann Nulens",
+      "company": "Plan Ann",
+      "headline": "Owner at Plan Ann",
+      "location": "Zutendaal, Vlaanderen, België",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "170254111",
+        "130193209"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Zutendaal, Vlaanderen, België|Plan Ann": {
+      "name": "Zutendaal, Vlaanderen, België",
+      "company": "Plan Ann",
+      "headline": "Huidig: Owner bij Plan Ann",
+      "location": "CEO & General Manager | Scaling Platform Businesses | M&A, Governance & Transformation",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "130193209"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Olivier Terrie|Green spaces": {
+      "name": "Olivier Terrie",
+      "company": "Green spaces",
+      "headline": "Company Owner at Green spaces",
+      "location": "Brugge, Vlaanderen, België",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "130193209"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Company Owner|Crest": {
+      "name": "Company Owner",
+      "company": "Crest",
+      "headline": "Huidig: Company Owner bij Crest",
+      "location": "Onbekend",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "130193209"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Nico Teerlinck|of HES Global Executive Search": {
+      "name": "Nico Teerlinck",
+      "company": "of HES Global Executive Search",
+      "headline": "Owner of HES Global Executive Search",
+      "location": "Alicante/Alacant en omgeving",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "113190254"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Kenneth Verbrugge|TUI Belgium": {
+      "name": "Kenneth Verbrugge",
+      "company": "TUI Belgium",
+      "headline": "Product Owner bij TUI Belgium",
+      "location": "Brugge en omgeving",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Franz Bucher|and director of the Gallery Bucher": {
+      "name": "Franz Bucher",
+      "company": "and director of the Gallery Bucher",
+      "headline": "Owner and director of the Gallery Bucher, Weite (Switzerland) and visual artist at Atelier Bucher, Weite (Switzerland)",
+      "location": "Wartau, Sankt Gallen, Zwitserland",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "103225244"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Ceres Bonny|Hotel Karel De Stoute Brugge": {
+      "name": "Ceres Bonny",
+      "company": "Hotel Karel De Stoute Brugge",
+      "headline": "Vorig: Hotel Owner bij Hotel Karel De Stoute Brugge",
+      "location": "Onbekend",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "194127110"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "North Sea Aviation Center|Hotel Karel De Stoute Brugge": {
+      "name": "North Sea Aviation Center",
+      "company": "Hotel Karel De Stoute Brugge",
+      "headline": "Vorig: Hotel Owner bij Hotel Karel De Stoute Brugge",
+      "location": "Onbekend",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "113162178"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Patrick Annys|Free lance catering events": {
+      "name": "Patrick Annys",
+      "company": "Free lance catering events",
+      "headline": "Independent Business Owner at Free lance catering events",
+      "location": "Meerhout, Vlaanderen, België",
+      "priority": "P1",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "103103125"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Meerhout, Vlaanderen, België|Free lance catering events Jeroen Brugman • 3de+": {
+      "name": "Meerhout, Vlaanderen, België",
+      "company": "Free lance catering events Jeroen Brugman • 3de+",
+      "headline": "Huidig: Independent Business Owner bij Free lance catering events Jeroen Brugman • 3de+",
+      "location": "Amsterdam, Noord-Holland, Nederland",
       "priority": "P1",
       "personalEmails": [],
       "hotelEmails": [],

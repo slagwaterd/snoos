@@ -43,9 +43,11 @@ export async function POST(req) {
         // Log to sent history
         await appendData('sent', {
             resendId: data.id,
-            from,
+            from: from || defaultSender,
             to,
             subject,
+            html,
+            text,
             type: html ? 'html' : 'text',
             status: scheduledAt ? 'scheduled' : 'sent',
             scheduledAt: scheduledAt || null

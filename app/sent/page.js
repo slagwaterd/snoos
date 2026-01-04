@@ -16,9 +16,8 @@ import {
 export default function SentPage() {
     const [emails, setEmails] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('newest');
     const [deleting, setDeleting] = useState(null);
+    const [selectedEmail, setSelectedEmail] = useState(null);
 
     useEffect(() => {
         fetch('/api/history')
@@ -103,82 +102,123 @@ export default function SentPage() {
                     <p>Je verzonden emails verschijnen hier automatisch.</p>
                 </div>
             ) : (
-                <>
-                    {filteredEmails.length > 0 ? (
-                        <div className="card" style={{ padding: 0 }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                                        <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>RECIPIENT</th>
-                                        <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>SUBJECT</th>
-                                        <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>DATE</th>
-                                        <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>STATUS</th>
-                                        <th style={{ textAlign: 'center', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>ACTIONS</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredEmails.map((email) => (
-                                        <tr key={email.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <User size={16} color="var(--text-muted)" />
-                                                    <span style={{ fontSize: '0.9rem' }}>{email.to}</span>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <Mail size={16} color="var(--text-muted)" />
-                                                    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email.subject}</span>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                                                    <Calendar size={14} />
-                                                    {new Date(email.createdAt).toLocaleString()}
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                {email.status === 'sent' ? (
-                                                    <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                                                        <CheckCircle2 size={12} />
-                                                        Delivered
-                                                    </span>
-                                                ) : (
-                                                    <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary)' }}>
-                                                        <Clock size={12} />
-                                                        Scheduled
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                                <button
-                                                    className="btn btn-outline"
-                                                    onClick={() => handleDelete(email.id)}
-                                                    disabled={deleting === email.id}
-                                                    style={{
-                                                        padding: '0.4rem 0.6rem',
-                                                        color: 'var(--error)',
-                                                        borderColor: 'var(--error)'
-                                                    }}
-                                                >
-                                                    {deleting === email.id ? (
-                                                        <Loader2 size={14} className="animate-spin" />
-                                                    ) : (
-                                                        <Trash2 size={14} />
-                                                    )}
-                                                </button>
-                                            </td>
+                <div style={{ display: 'grid', gridTemplateColumns: selectedEmail ? '1fr 400px' : '1fr', gap: '2rem', transition: 'all 0.3s ease' }}>
+                    <div>
+                        {filteredEmails.length > 0 ? (
+                            <div className="card" style={{ padding: 0 }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+                                            <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>RECIPIENT</th>
+                                            <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>SUBJECT</th>
+                                            <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>DATE</th>
+                                            <th style={{ textAlign: 'left', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>STATUS</th>
+                                            <th style={{ textAlign: 'center', padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>ACTIONS</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    ) : (
-                        <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-                            <p style={{ color: 'var(--text-muted)' }}>Geen verzonden emails gevonden die voldoen aan je zoekopdracht.</p>
+                                    </thead>
+                                    <tbody>
+                                        {filteredEmails.map((email) => (
+                                            <tr
+                                                key={email.id}
+                                                style={{
+                                                    borderBottom: '1px solid var(--border)',
+                                                    cursor: 'pointer',
+                                                    background: selectedEmail?.id === email.id ? 'rgba(0, 212, 255, 0.05)' : 'transparent'
+                                                }}
+                                                onClick={() => setSelectedEmail(email)}
+                                            >
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <User size={16} color="var(--text-muted)" />
+                                                        <span style={{ fontSize: '0.9rem' }}>{email.to}</span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Mail size={16} color="var(--text-muted)" />
+                                                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email.subject}</span>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                                                        <Calendar size={14} />
+                                                        {new Date(email.createdAt).toLocaleString()}
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    {email.status === 'sent' ? (
+                                                        <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                            <CheckCircle2 size={12} />
+                                                            Delivered
+                                                        </span>
+                                                    ) : (
+                                                        <span className="badge badge-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(99, 102, 241, 0.2)', color: 'var(--primary)' }}>
+                                                            <Clock size={12} />
+                                                            Scheduled
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                    <button
+                                                        className="btn btn-outline"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDelete(email.id);
+                                                        }}
+                                                        disabled={deleting === email.id}
+                                                        style={{
+                                                            padding: '0.4rem 0.6rem',
+                                                            color: 'var(--error)',
+                                                            borderColor: 'var(--error)'
+                                                        }}
+                                                    >
+                                                        {deleting === email.id ? (
+                                                            <Loader2 size={14} className="animate-spin" />
+                                                        ) : (
+                                                            <Trash2 size={14} />
+                                                        )}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+                                <p style={{ color: 'var(--text-muted)' }}>Geen verzonden emails gevonden die voldoen aan je zoekopdracht.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {selectedEmail && (
+                        <div className="card" style={{ position: 'sticky', top: '2rem', height: 'calc(100vh - 4rem)', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
+                                <div>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{selectedEmail.subject}</h3>
+                                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem' }}>To: {selectedEmail.to}</p>
+                                </div>
+                                <button onClick={() => setSelectedEmail(null)} style={{ color: 'var(--text-muted)' }}>✕</button>
+                            </div>
+
+                            <div style={{ flex: 1, overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '1rem' }}>
+                                {selectedEmail.html ? (
+                                    <div dangerouslySetInnerHTML={{ __html: selectedEmail.html }} style={{ fontSize: '0.9rem', color: 'var(--text)' }} />
+                                ) : (
+                                    <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', color: 'var(--text)' }}>{selectedEmail.text}</p>
+                                )}
+                                {!selectedEmail.html && !selectedEmail.text && (
+                                    <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>Inhoud niet beschikbaar voor dit gearchiveerde bericht.</p>
+                                )}
+                            </div>
+
+                            <div style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>ID: {selectedEmail.resendId || 'N/A'}</span>
+                                <span>{new Date(selectedEmail.createdAt).toLocaleString()}</span>
+                            </div>
                         </div>
                     )}
-                </>
+                </div>
             )}
         </div>
     );
