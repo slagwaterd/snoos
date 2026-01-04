@@ -1,5 +1,59 @@
 [
   {
+    "id": "32825da1-ed66-48b6-b6df-2ac44ea9a8cd",
+    "createdAt": "2026-01-04T20:11:47.523Z",
+    "resendId": "7f9dc64c-fd6f-49b3-901c-11fa45cf5b17",
+    "to": "guus.arts@marriott.com",
+    "subject": "Fricite en Tijd in VIP-erkenning",
+    "status": "sent",
+    "campaignId": "abc36d39-c55a-4295-ab80-f6cacd35a31e"
+  },
+  {
+    "id": "5e968be1-7625-4722-ab36-ccfda22c89f6",
+    "createdAt": "2026-01-04T20:11:44.628Z",
+    "resendId": "2f11df48-78b4-4cd4-9546-a13825048e95",
+    "to": "ralph.ecury@ihg.com",
+    "subject": "Fricitie in VIP Herkenning en Tijd",
+    "status": "sent",
+    "campaignId": "abc36d39-c55a-4295-ab80-f6cacd35a31e"
+  },
+  {
+    "id": "8be4a0ae-9195-4134-8ca4-285069f38e73",
+    "createdAt": "2026-01-04T19:55:02.368Z",
+    "resendId": "c6bb20e3-2fc0-4a8f-a629-9b8a5f7c46c2",
+    "to": "henk.rauwerda@westcordhotels.nl",
+    "subject": "Friction en Tijdbeheer in VIP Herkenning",
+    "status": "sent",
+    "campaignId": "abc36d39-c55a-4295-ab80-f6cacd35a31e"
+  },
+  {
+    "id": "6c79de6e-9889-4e9c-b3ef-a9afcffb7f42",
+    "createdAt": "2026-01-04T19:53:57.165Z",
+    "resendId": "ac1fa619-d9dc-4527-8325-4da587c8aa63",
+    "to": "roos.bruijn@accor.com",
+    "subject": "Fricite en Tijd in VIP Erkenning",
+    "status": "sent",
+    "campaignId": "abc36d39-c55a-4295-ab80-f6cacd35a31e"
+  },
+  {
+    "id": "3f67b8bb-2fd2-40c0-be6e-2d458d3ba079",
+    "createdAt": "2026-01-04T19:53:05.460Z",
+    "resendId": "bb073f47-bbb2-4940-b4ec-45e5f9cf88bc",
+    "to": "maarten.amerongen@westcordhotels.nl",
+    "subject": "Friction en Tijd: Verbeterpunten in VIP-erkenning",
+    "status": "sent",
+    "campaignId": "abc36d39-c55a-4295-ab80-f6cacd35a31e"
+  },
+  {
+    "id": "e74369dc-9441-4c8c-9ffd-2849adec8ffd",
+    "createdAt": "2026-01-04T19:51:53.539Z",
+    "resendId": "858e962e-09fa-4cf0-b51b-2ef8869d0845",
+    "to": "Jeroen.Diepeveen@hotelcasa.nl",
+    "subject": "Fricitie en Tijdbeheer in VIP Erkenning",
+    "status": "sent",
+    "campaignId": "abc36d39-c55a-4295-ab80-f6cacd35a31e"
+  },
+  {
     "id": "f74b4ea1-5f2f-402c-9663-d1907fc06b4e",
     "createdAt": "2026-01-03T13:55:30.139Z",
     "resendId": "3f7bd502-38b1-48f1-b962-bc5f8fd2d6ac",

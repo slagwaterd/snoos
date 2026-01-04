@@ -2,9 +2,9 @@
   {
     "id": "abc36d39-c55a-4295-ab80-f6cacd35a31e",
     "name": "KYV Outreach - Batch 1",
-    "status": "paused",
+    "status": "processing",
     "createdAt": "2026-01-04T14:30:51.812Z",
-    "updatedAt": "2026-01-04T14:30:51.812Z",
+    "updatedAt": "2026-01-04T20:11:47.492Z",
     "agentId": "kyv-outreach-1",
     "recipients": [
       {
@@ -20457,6 +20457,70 @@
           "domain": "marriott.com"
         }
       }
-    ]
+    ],
+    "logs": [
+      {
+        "timestamp": "2026-01-04T20:11:47.465Z",
+        "recipient": "guus.arts@marriott.com",
+        "step": "VOLTOOID",
+        "status": "success",
+        "message": "✅ Verzonden naar guus.arts@marriott.com"
+      },
+      {
+        "timestamp": "2026-01-04T20:11:47.258Z",
+        "recipient": "guus.arts@marriott.com",
+        "step": "VERZENDEN",
+        "status": "sending",
+        "message": "Verzenden via Resend infra..."
+      },
+      {
+        "timestamp": "2026-01-04T20:11:45.164Z",
+        "recipient": "guus.arts@marriott.com",
+        "step": "AI_OPSTELLEN",
+        "status": "generating",
+        "message": "Persoonlijke mail (Dutch) genereren..."
+      },
+      {
+        "timestamp": "2026-01-04T20:11:45.139Z",
+        "recipient": "guus.arts@marriott.com",
+        "step": "MAILBOX_CHECK",
+        "status": "checking",
+        "message": "Adres controleren..."
+      },
+      {
+        "timestamp": "2026-01-04T20:11:45.041Z",
+        "recipient": "guus.arts@marriott.com",
+        "step": "DNS_CHECK",
+        "status": "checking",
+        "message": "Domein controleren..."
+      },
+      {
+        "timestamp": "2026-01-04T20:11:44.806Z",
+        "recipient": "guus.arts@marriott.com",
+        "step": "VOORBEREIDEN",
+        "status": "processing",
+        "message": "Analyse voor Guus Arts..."
+      },
+      {
+        "timestamp": "2026-01-04T20:11:44.591Z",
+        "recipient": "ralph.ecury@ihg.com",
+        "step": "VOLTOOID",
+        "status": "success",
+        "message": "✅ Verzonden naar ralph.ecury@ihg.com"
+      },
+      {
+        "timestamp": "2026-01-04T20:11:43.917Z",
+        "recipient": "ralph.ecury@ihg.com",
+        "step": "VERZENDEN",
+        "status": "sending",
+        "message": "Verzenden via Resend infra..."
+      }
+    ],
+    "currentIndex": 16,
+    "sentCount": 2,
+    "template": {
+      "subject": "",
+      "content": ""
+    }
   }
 ]
