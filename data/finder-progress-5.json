@@ -174,7 +174,12 @@
     "STRATEGIC LEADER → Corporate Affairs|Mozambique National Tourist Co",
     "Cidade de Maputo, Mozambique|Mozambique National Tourist Co",
     "Romy V.|Azia Resort and Spa",
-    "Paphos, Cyprus|Azia Resort and Spa"
+    "Paphos, Cyprus|Azia Resort and Spa",
+    "Meaghan Brugge|Winter Park Resort",
+    "Financial Advisor|Winter Park Resort",
+    "Granby, Colorado, Verenigde Staten|Winter Park Resort",
+    "Fabian Scheys|Domein Polderwind",
+    "Luisa Estadão|@ LE"
   ],
   "results": {
     "Luxemburg, Wallonië, België|hotel Corbillon": {
@@ -2874,6 +2879,85 @@
       "hotelEmails": [],
       "allEmails": [],
       "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Meaghan Brugge|Winter Park Resort": {
+      "name": "Meaghan Brugge",
+      "company": "Winter Park Resort",
+      "headline": "Vorig: Senior Accounting Manager bij Winter Park Resort",
+      "location": "Onbekend",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Financial Advisor|Winter Park Resort": {
+      "name": "Financial Advisor",
+      "company": "Winter Park Resort",
+      "headline": "Vorig: Senior Accounting Manager bij Winter Park Resort",
+      "location": "Onbekend",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "168228230"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Granby, Colorado, Verenigde Staten|Winter Park Resort": {
+      "name": "Granby, Colorado, Verenigde Staten",
+      "company": "Winter Park Resort",
+      "headline": "Vorig: Senior Accounting Manager bij Winter Park Resort",
+      "location": "Onbekend",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Fabian Scheys|Domein Polderwind": {
+      "name": "Fabian Scheys",
+      "company": "Domein Polderwind",
+      "headline": "Huidig: Operations Manager bij Domein Polderwind",
+      "location": "Onbekend",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Luisa Estadão|@ LE": {
+      "name": "Luisa Estadão",
+      "company": "@ LE",
+      "headline": "Landscape Architect . Project Manager @ LE - Landscape and Environment | Advanced Studies |",
+      "location": "Abu Dhabi, Abu Dhabi (emiraat), Verenigde Arabische Emiraten",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "190120250"
+      ],
       "addresses": [],
       "domain": null,
       "primaryEmail": null,

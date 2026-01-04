@@ -204,7 +204,12 @@
     "Denisa Oana Sulica|la MEININGER Hotels Brussels Gare du Midi",
     "Bilguun Nergui|Brussels belgium beer cafe",
     "Ulaanbaatar Hot, Mongolië|Brussels belgium beer cafe",
-    "Michael Van Den Bremt|Thon Hotel Brussels City Centre"
+    "Michael Van Den Bremt|Thon Hotel Brussels City Centre",
+    "Senior Operations Manager|Groupe Pierre & Vacances",
+    "Lijsem, Wallonië, België|Groupe Pierre & Vacances",
+    "Operations Manager|Le Châtelain Brussels Hotel",
+    "Ana-Ilinca Dumitrescu|@ voco Brussels City North",
+    "Maxime Hantson|and Operations Manager at Business and Engineering Solutions (B.E.S)"
   ],
   "results": {
     "Xabier Nambo|@Nhow Rotterdam": {
@@ -3362,6 +3367,89 @@
       "phones": [
         "150228105"
       ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Senior Operations Manager|Groupe Pierre & Vacances": {
+      "name": "Senior Operations Manager",
+      "company": "Groupe Pierre & Vacances",
+      "headline": "Huidig: Senior Operations Manager bij Groupe Pierre & Vacances - Center Parcs",
+      "location": "Onbekend",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "105235130"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Lijsem, Wallonië, België|Groupe Pierre & Vacances": {
+      "name": "Lijsem, Wallonië, België",
+      "company": "Groupe Pierre & Vacances",
+      "headline": "Huidig: Senior Operations Manager bij Groupe Pierre & Vacances - Center Parcs",
+      "location": "Onbekend",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "113161134"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Operations Manager|Le Châtelain Brussels Hotel": {
+      "name": "Operations Manager",
+      "company": "Le Châtelain Brussels Hotel",
+      "headline": "Huidig: Operations Manager bij Le Châtelain Brussels Hotel",
+      "location": "Onbekend",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "113161134"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Ana-Ilinca Dumitrescu|@ voco Brussels City North": {
+      "name": "Ana-Ilinca Dumitrescu",
+      "company": "@ voco Brussels City North",
+      "headline": "Rooms Division Manager @ voco Brussels City North | Operations specialist",
+      "location": "Brussel, Brussels Hoofdstedelijk Gewest, België",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "196189127"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Maxime Hantson|and Operations Manager at Business and Engineering Solutions (B.E.S)": {
+      "name": "Maxime Hantson",
+      "company": "and Operations Manager at Business and Engineering Solutions (B.E.S)",
+      "headline": "Talent Acquisition Manager and Operations Manager at Business and Engineering Solutions (B.E.S)",
+      "location": "Brussel, Brussels Hoofdstedelijk Gewest, België",
+      "priority": "P3",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
       "addresses": [],
       "domain": null,
       "primaryEmail": null,

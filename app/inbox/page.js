@@ -24,6 +24,8 @@ export default function InboxPage() {
     const [deleting, setDeleting] = useState(null);
     const [replyText, setReplyText] = useState('');
     const [sendingReply, setSendingReply] = useState(false);
+    const [isDrafting, setIsDrafting] = useState(false);
+    const [isForwarding, setIsForwarding] = useState(false);
 
     // Filter & Sort State
     const [searchQuery, setSearchQuery] = useState('');
@@ -146,6 +148,40 @@ export default function InboxPage() {
         } finally {
             setSendingReply(false);
         }
+    };
+
+    const handleAIDraft = async () => {
+        if (!selectedEmail) return;
+        setIsDrafting(true);
+        try {
+            const prompt = `Je bent een professionele outreach assistent (Jarvis). 
+Schrijf een concept-antwoord op de volgende email van ${selectedEmail.from}.
+De toon moet enthousiast maar professioneel zijn.
+Email inhous: ${selectedEmail.text || selectedEmail.html}
+
+Geef alleen de tekst van het antwoord, geen aanhef of afsluiting die ik zelf al heb.`;
+
+            const res = await fetch('/api/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'research_synthesis', content: prompt })
+            });
+            const data = await res.json();
+            setReplyText(data.result || '');
+        } catch (err) {
+            alert('Fout bij het genereren van AI concept');
+        } finally {
+            setIsDrafting(false);
+        }
+    };
+
+    const handleForward = () => {
+        if (!selectedEmail) return;
+        const forwardText = `\n\n---------- Doorverbonden bericht ----------\nVan: ${selectedEmail.from}\nDatum: ${new Date(selectedEmail.createdAt).toLocaleString()}\nOnderwerp: ${selectedEmail.subject}\n\n${selectedEmail.text || ''}`;
+        setReplyText(forwardText);
+        setIsForwarding(true);
+        // In a real app we might open a modal with "To:" field, but let's keep it in the reply box for now
+        alert('Plak de ontvanger in het "To" veld (functie in ontwikkeling)');
     };
 
     return (
@@ -287,9 +323,28 @@ export default function InboxPage() {
                                 </div>
 
                                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                                        <Sparkles size={18} color="var(--primary)" />
-                                        <h3 style={{ margin: 0, fontSize: '1rem' }}>Jarvis Analysis</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', justifyContent: 'space-between' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <Sparkles size={18} color="var(--primary)" />
+                                            <h3 style={{ margin: 0, fontSize: '1rem' }}>Jarvis Analysis</h3>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                className="btn btn-outline"
+                                                style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}
+                                                onClick={handleAIDraft}
+                                                disabled={isDrafting}
+                                            >
+                                                {isDrafting ? 'Drafting...' : 'AI Draft Reply'}
+                                            </button>
+                                            <button
+                                                className="btn btn-outline"
+                                                style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem' }}
+                                                onClick={handleForward}
+                                            >
+                                                Forward
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {analyzing ? (
@@ -315,7 +370,7 @@ export default function InboxPage() {
                                         </div>
                                         <textarea
                                             className="textarea"
-                                            placeholder={`Typ je antwoord aan ${selectedEmail.from.split('<')[0]}...`}
+                                            placeholder={`Typ je antwoord aan ${selectedEmail?.from?.includes('<') ? selectedEmail.from.split('<')[0] : selectedEmail.from}...`}
                                             value={replyText}
                                             onChange={(e) => setReplyText(e.target.value)}
                                             style={{ minHeight: '120px', marginBottom: '1rem' }}
