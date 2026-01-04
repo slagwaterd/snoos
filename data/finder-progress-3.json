@@ -199,7 +199,12 @@
     "Joachim Schlosser|1898 The Post Hotel",
     "Elkan Kramer|acquisitions at Zaanpark Ronde Tocht B.V.",
     "Diederik Lebbink|Brussels Airlines",
-    "Xavier Vierstraete|of Operations at Dolce Hotels & Resorts"
+    "Xavier Vierstraete|of Operations at Dolce Hotels & Resorts",
+    "Trinh Quy|Head Office",
+    "Coralie Rubini|Le Safari Hotel Restaurant and Coach Holistic « Astrology »",
+    "Crans-Montana, Valais, Zwitserland|Rosebud ( RIchemond) Héritage Hotel Management and Development",
+    "Gunes Metin-Asselberghs|Penta Hotels",
+    "Uri Meretyk|of Food & Beverage @ Everland"
   ],
   "results": {
     "Angela Böck|presso Marry me in Italy": {
@@ -3288,6 +3293,85 @@
       "company": "of Operations at Dolce Hotels & Resorts",
       "headline": "Director of Operations at Dolce Hotels & Resorts",
       "location": "Brussel en omgeving",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Trinh Quy|Head Office": {
+      "name": "Trinh Quy",
+      "company": "Head Office",
+      "headline": "Director of Rooms at TTC Hospitality Group - Head Office",
+      "location": "Ho Chi Minhstad, Vietnam",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Coralie Rubini|Le Safari Hotel Restaurant and Coach Holistic « Astrology »": {
+      "name": "Coralie Rubini",
+      "company": "Le Safari Hotel Restaurant and Coach Holistic « Astrology »",
+      "headline": "Hotel Restaurant Director at Le Safari Hotel Restaurant and Coach Holistic « Astrology »",
+      "location": "Lyon en omgeving",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "185217174"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Crans-Montana, Valais, Zwitserland|Rosebud ( RIchemond) Héritage Hotel Management and Development": {
+      "name": "Crans-Montana, Valais, Zwitserland",
+      "company": "Rosebud ( RIchemond) Héritage Hotel Management and Development",
+      "headline": "Vorig: Director of Operations bij Rosebud ( RIchemond) Héritage Hotel Management and Development - …in Brussels and Brugges.  Feasibility study, Marketing Plan, Project study of renovation of each hotel…",
+      "location": "Onbekend",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [
+        "103120165"
+      ],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Gunes Metin-Asselberghs|Penta Hotels": {
+      "name": "Gunes Metin-Asselberghs",
+      "company": "Penta Hotels",
+      "headline": "Key Accounts Director - Airlines @ Penta Hotels",
+      "location": "Vilvoorde, Vlaanderen, België",
+      "priority": "P2",
+      "personalEmails": [],
+      "hotelEmails": [],
+      "allEmails": [],
+      "phones": [],
+      "addresses": [],
+      "domain": null,
+      "primaryEmail": null,
+      "confidence": "NONE"
+    },
+    "Uri Meretyk|of Food & Beverage @ Everland": {
+      "name": "Uri Meretyk",
+      "company": "of Food & Beverage @ Everland",
+      "headline": "Builder of Experiences, Teams & Bottom Lines | Group Director of Food & Beverage @ Everland",
+      "location": "Amsterdam, Noord-Holland, Nederland",
       "priority": "P2",
       "personalEmails": [],
       "hotelEmails": [],

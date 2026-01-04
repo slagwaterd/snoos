@@ -10,7 +10,9 @@ import {
     MessageSquare,
     RefreshCcw,
     Loader2,
-    Trash2
+    Trash2,
+    Send,
+    CornerUpLeft
 } from 'lucide-react';
 
 export default function InboxPage() {
@@ -20,6 +22,8 @@ export default function InboxPage() {
     const [aiAnalysis, setAiAnalysis] = useState({ summary: '', actionItems: '', sentiment: '' });
     const [analyzing, setAnalyzing] = useState(false);
     const [deleting, setDeleting] = useState(null);
+    const [replyText, setReplyText] = useState('');
+    const [sendingReply, setSendingReply] = useState(false);
 
     // Filter & Sort State
     const [searchQuery, setSearchQuery] = useState('');
@@ -110,7 +114,38 @@ export default function InboxPage() {
 
     const selectEmail = (email) => {
         setSelectedEmail(email);
+        setReplyText('');
         handleAnalyze(email);
+    };
+
+    const handleReply = async () => {
+        if (!replyText.trim() || !selectedEmail) return;
+
+        setSendingReply(true);
+        try {
+            const res = await fetch('/api/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: selectedEmail.from,
+                    subject: selectedEmail.subject.startsWith('Re:') ? selectedEmail.subject : `Re: ${selectedEmail.subject}`,
+                    text: replyText,
+                    replyTo: selectedEmail.to // Optional: set replyTo if needed
+                })
+            });
+
+            if (res.ok) {
+                alert('Antwoord succesvol verzonden!');
+                setReplyText('');
+            } else {
+                const data = await res.json();
+                alert(`Fout bij verzenden: ${data.error || 'Onbekende fout'}`);
+            }
+        } catch (err) {
+            alert('Netwerkfout bij verzenden');
+        } finally {
+            setSendingReply(false);
+        }
     };
 
     return (
@@ -260,7 +295,7 @@ export default function InboxPage() {
                                     {analyzing ? (
                                         <p style={{ fontSize: '0.85rem' }}>Analyzing email content...</p>
                                     ) : (
-                                        <div className="grid grid-2">
+                                        <div className="grid grid-2" style={{ marginBottom: '2rem' }}>
                                             <div style={{ background: 'var(--bg)', padding: '1rem', borderRadius: '8px' }}>
                                                 <p style={{ margin: '0 0 0.5rem', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>SUMMARY</p>
                                                 <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: '1.5' }}>{aiAnalysis.summary || 'Select feature to analyze.'}</p>
@@ -271,6 +306,32 @@ export default function InboxPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Reply Section */}
+                                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                                            <CornerUpLeft size={18} color="var(--primary)" />
+                                            <h3 style={{ margin: 0, fontSize: '1rem' }}>Quick Reply</h3>
+                                        </div>
+                                        <textarea
+                                            className="textarea"
+                                            placeholder={`Typ je antwoord aan ${selectedEmail.from.split('<')[0]}...`}
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            style={{ minHeight: '120px', marginBottom: '1rem' }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={handleReply}
+                                                disabled={sendingReply || !replyText.trim()}
+                                                style={{ gap: '0.5rem' }}
+                                            >
+                                                {sendingReply ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                                                {sendingReply ? 'Verzenden...' : 'Send Reply'}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         ) : (
