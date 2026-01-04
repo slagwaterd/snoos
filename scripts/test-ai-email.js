@@ -1,6 +1,6 @@
 // Test script voor AI email generatie met validatie
 // Gebruik: node scripts/test-ai-email.js
-import { smartAICall } from '../lib/ai-router.js';
+import { smartAICall } from '../lib/ai.js';
 import { readData } from '../lib/storage.js';
 
 async function testEmailGeneration() {
