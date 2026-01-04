@@ -11,7 +11,9 @@ import {
     Loader2,
     AlertCircle,
     Bot,
-    FolderOpen
+    FolderOpen,
+    Pause,
+    History
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -28,33 +30,72 @@ function BatchContent() {
     const [template, setTemplate] = useState({ subject: '', content: '' });
     const [isPersonalizing, setIsPersonalizing] = useState(true);
     const [sending, setSending] = useState(false);
-    const [results, setResults] = useState(null);
+    const [pollingActive, setPollingActive] = useState(false);
     const router = useRouter();
 
-    useEffect(() => {
-        Promise.all([
+    const fetchData = async () => {
+        const [contactsRes, campaignsRes, agentsRes] = await Promise.all([
             fetch('/api/contacts').then(r => r.json()),
             fetch('/api/campaigns').then(r => r.json()),
             fetch('/api/agents').then(r => r.json())
-        ]).then(([contactsData, campaignsData, agentsData]) => {
-            setContacts(contactsData);
-            setCampaigns(campaignsData);
-            setAgents(agentsData);
+        ]);
+        setContacts(contactsRes);
+        setCampaigns(campaignsRes);
+        setAgents(agentsRes);
 
-            // Auto-load campaign if ID provided
-            if (campaignId) {
-                const campaign = campaignsData.find(c => c.id === campaignId);
-                if (campaign) {
-                    setSelectedCampaign(campaign);
-                    setSelectedIds(campaign.recipients?.map((_, i) => i) || []);
-                    if (campaign.agentId) {
-                        const agent = agentsData.find(a => a.id === campaign.agentId);
-                        setSelectedAgent(agent);
-                    }
+        // Update selected campaign if active
+        if (selectedCampaign) {
+            const updated = campaignsRes.find(c => c.id === selectedCampaign.id);
+            if (updated) setSelectedCampaign(updated);
+        } else if (campaignId && !selectedCampaign) {
+            const campaign = campaignsRes.find(c => c.id === campaignId);
+            if (campaign) {
+                setSelectedCampaign(campaign);
+                setSelectedIds(campaign.recipients?.map((_, i) => i) || []);
+                if (campaign.agentId) {
+                    const agent = agentsRes.find(a => a.id === campaign.agentId);
+                    setSelectedAgent(agent);
                 }
             }
-        });
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
     }, [campaignId]);
+
+    // Polling logic
+    useEffect(() => {
+        let interval;
+        if (selectedCampaign?.status === 'processing' || pollingActive) {
+            interval = setInterval(fetchData, 2000);
+        }
+        return () => clearInterval(interval);
+    }, [selectedCampaign?.status, pollingActive, selectedCampaign?.id]);
+
+    const handleControl = async (action) => {
+        setSending(true);
+        try {
+            const res = await fetch('/api/campaigns/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    campaignId: selectedCampaign.id,
+                    action,
+                    template: (action === 'START' || action === 'RESUME') ? template : undefined
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setSelectedCampaign(data.campaign);
+                if (action === 'START') setPollingActive(true);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSending(false);
+        }
+    };
 
     const getRecipients = () => {
         if (selectedCampaign) {
@@ -68,56 +109,6 @@ function BatchContent() {
             prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
-
-    const handleBatchSend = async () => {
-        const recipients = getRecipients();
-        const selected = selectedIds.map(id => recipients[id] || recipients.find(r => r.id === id));
-
-        if (selected.length === 0) return alert('Selecteer minimaal één ontvanger.');
-        setSending(true);
-        setResults(null);
-
-        try {
-            const res = await fetch('/api/send/batch', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contacts: selected,
-                    subject: template.subject,
-                    content: template.content,
-                    personalize: isPersonalizing,
-                    agentId: selectedAgent?.id
-                })
-            });
-            const data = await res.json();
-            setResults(data);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setSending(false);
-        }
-    };
-
-    if (results) {
-        return (
-            <div className="card" style={{ maxWidth: '600px', margin: '4rem auto', textAlign: 'center', padding: '3rem' }}>
-                <div style={{
-                    width: '80px', height: '80px', borderRadius: '50%', background: 'var(--success)',
-                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem'
-                }}>
-                    <CheckCircle2 size={40} />
-                </div>
-                <h1>Batch Verzonden!</h1>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-                    We hebben {results.count} gepersonaliseerde mails in de wachtrij gezet.
-                </p>
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                    <button className="btn btn-outline" onClick={() => setResults(null)}>Nieuwe Batch</button>
-                    <button className="btn btn-primary" onClick={() => router.push('/sent')}>Bekijk Geschiedenis</button>
-                </div>
-            </div>
-        );
-    }
 
     const recipients = getRecipients();
 
@@ -277,21 +268,95 @@ function BatchContent() {
                             <span style={{ fontWeight: 600 }}>{selectedIds.length}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                            <span style={{ color: 'var(--text-muted)' }}>Agent:</span>
-                            <span>{selectedAgent?.name || 'Basic AI'}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>Status:</span>
+                            <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{selectedCampaign?.status || 'N/A'}</span>
                         </div>
                         <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.5rem 0' }} />
 
-                        <button
-                            className="btn btn-primary"
-                            style={{ width: '100%', gap: '0.5rem' }}
-                            onClick={handleBatchSend}
-                            disabled={sending || selectedIds.length === 0}
-                        >
-                            {sending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
-                            {sending ? 'Processing Batch...' : 'Send Batch Now'}
-                        </button>
+                        {selectedCampaign?.status === 'processing' ? (
+                            <button
+                                className="btn btn-outline"
+                                style={{ width: '100%', gap: '0.5rem', color: 'var(--primary)' }}
+                                onClick={() => handleControl('PAUSE')}
+                                disabled={sending}
+                            >
+                                <Pause size={18} /> Pause Campaign
+                            </button>
+                        ) : selectedCampaign?.status === 'paused' ? (
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    className="btn btn-primary"
+                                    style={{ flex: 2, gap: '0.5rem' }}
+                                    onClick={() => handleControl('RESUME')}
+                                    disabled={sending}
+                                >
+                                    <Play size={18} /> Resume
+                                </button>
+                                <button
+                                    className="btn btn-outline"
+                                    style={{ flex: 1, color: 'var(--error)' }}
+                                    onClick={() => handleControl('RESET')}
+                                    disabled={sending}
+                                >
+                                    Reset
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                className="btn btn-primary"
+                                style={{ width: '100%', gap: '0.5rem' }}
+                                onClick={() => handleControl('START')}
+                                disabled={sending || selectedIds.length === 0}
+                            >
+                                {sending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                                {sending ? 'Initializing...' : 'Start Global Campaign'}
+                            </button>
+                        )}
                     </div>
+
+                    {/* Progress Monitor */}
+                    {selectedCampaign && (selectedCampaign.status === 'processing' || selectedCampaign.status === 'paused' || selectedCampaign.sentCount > 0) && (
+                        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.85rem' }}>
+                                <span>Progress</span>
+                                <span>{Math.round(((selectedCampaign.sentCount || 0) / (selectedCampaign.recipients?.length || 1)) * 100)}%</span>
+                            </div>
+                            <div style={{ height: '8px', background: 'var(--bg)', borderRadius: '4px', overflow: 'hidden', marginBottom: '1rem' }}>
+                                <div style={{
+                                    height: '100%',
+                                    background: 'var(--primary)',
+                                    width: `${((selectedCampaign.sentCount || 0) / (selectedCampaign.recipients?.length || 1)) * 100}%`,
+                                    transition: 'width 0.5s ease'
+                                }} />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                                <span>{selectedCampaign.sentCount || 0} sent</span>
+                                <span>{selectedCampaign.recipients?.length || 0} total</span>
+                            </div>
+
+                            <h4 style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <Layers size={14} /> Global Activity Log
+                            </h4>
+                            <div style={{
+                                maxHeight: '200px',
+                                overflowY: 'auto',
+                                fontSize: '0.7rem',
+                                background: 'black',
+                                padding: '0.75rem',
+                                borderRadius: '8px',
+                                fontFamily: 'monospace'
+                            }}>
+                                {selectedCampaign.logs?.length > 0 ? selectedCampaign.logs.map((log, i) => (
+                                    <div key={i} style={{ marginBottom: '0.4rem', color: log.status === 'error' ? 'var(--error)' : 'var(--success)' }}>
+                                        [{new Date(log.timestamp).toLocaleTimeString()}] {log.status === 'error' ? '❌' : '✅'} {log.recipient}: {log.error || 'Sent'}
+                                    </div>
+                                )) : (
+                                    <div style={{ color: 'var(--text-muted)' }}>Waiting for activity...</div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {!isPersonalizing && (
                         <div style={{
