@@ -10,13 +10,13 @@ export async function POST(req) {
 
             // Save to inbox
             await appendData('inbox', {
-                resendId: emailData.email_id,
+                resendId: emailData.id,
                 from: emailData.from,
-                to: emailData.to,
+                to: Array.isArray(emailData.to) ? emailData.to.join(\", \") : emailData.to,
                 subject: emailData.subject,
                 text: emailData.text,
                 html: emailData.html,
-                receivedAt: emailData.created_at,
+                receivedAt: emailData.created_at || new Date().toISOString(),
                 status: 'unread'
             });
 
