@@ -348,11 +348,19 @@ function BatchContent() {
                                 borderRadius: '8px',
                                 fontFamily: 'monospace'
                             }}>
-                                {selectedCampaign.logs?.length > 0 ? selectedCampaign.logs.map((log, i) => (
-                                    <div key={i} style={{ marginBottom: '0.4rem', color: log.status === 'error' ? 'var(--error)' : 'var(--success)' }}>
-                                        [{new Date(log.timestamp).toLocaleTimeString()}] {log.status === 'error' ? '❌' : '✅'} {log.recipient}: {log.error || 'Sent'}
-                                    </div>
-                                )) : (
+                                {selectedCampaign.logs?.length > 0 ? selectedCampaign.logs.map((log, i) => {
+                                    let color = 'var(--success)';
+                                    let icon = '✅';
+                                    if (log.status === 'failed' || log.status === 'error') { color = 'var(--error)'; icon = '❌'; }
+                                    if (log.status === 'skipped' || log.status === 'blocked') { color = '#fbbf24'; icon = '🚫'; }
+                                    if (log.status === 'processing' || log.status === 'checking') { color = '#60a5fa'; icon = '⏳'; }
+
+                                    return (
+                                        <div key={i} style={{ marginBottom: '0.4rem', color }}>
+                                            [{new Date(log.timestamp).toLocaleTimeString()}] {icon} {log.recipient}: {log.message || log.error || 'Activity'}
+                                        </div>
+                                    );
+                                }) : (
                                     <div style={{ color: 'var(--text-muted)' }}>Waiting for activity...</div>
                                 )}
                             </div>
