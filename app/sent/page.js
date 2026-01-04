@@ -16,6 +16,8 @@ import {
 export default function SentPage() {
     const [emails, setEmails] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState('newest');
     const [deleting, setDeleting] = useState(null);
     const [selectedEmail, setSelectedEmail] = useState(null);
 
