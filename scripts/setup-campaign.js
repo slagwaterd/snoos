@@ -15,6 +15,36 @@ const LEADS_PATH = path.join(DATA_DIR, 'final-leads.json');
 const CAMPAIGNS_PATH = path.join(DATA_DIR, 'campaigns.json');
 const AGENTS_PATH = path.join(DATA_DIR, 'agents.json');
 
+/**
+ * Selects the best email from allEmails, avoiding generic addresses like info@, sales@, etc.
+ * Falls back to primaryEmail if no better option found.
+ */
+function selectBestEmail(lead) {
+    const genericPrefixes = ['info', 'contact', 'sales', 'marketing', 'hotel', 'reservations',
+        'reservatie', 'receptie', 'booking', 'frontdesk', 'guest', 'welcome', 'general',
+        'hospitality', 'reservering', 'admin', 'support', 'hello', 'office'];
+
+    // Parse allEmails (semicolon or comma separated)
+    const allEmails = (lead.allEmails || '')
+        .split(/[;,]/)
+        .map(e => e.trim().toLowerCase())
+        .filter(e => e && e.includes('@'));
+
+    // Find first non-generic email
+    for (const email of allEmails) {
+        const localPart = email.split('@')[0];
+        const isGeneric = genericPrefixes.some(prefix =>
+            localPart === prefix || localPart.startsWith(prefix + '.') || localPart.startsWith(prefix + '_')
+        );
+        if (!isGeneric) {
+            return email;
+        }
+    }
+
+    // Fall back to primaryEmail
+    return lead.primaryEmail;
+}
+
 function setupCampaign() {
     console.log('🏗️ Setting up S-MAILER Campaign: Batch 1');
     console.log('='.repeat(40) + '\n');
