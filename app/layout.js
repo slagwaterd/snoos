@@ -20,7 +20,9 @@ export const metadata = {
     },
     icons: {
         icon: '/jarvis-icon.png',
-        apple: '/jarvis-icon.png',
+        apple: [
+            { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+        ],
     },
     themeColor: '#f59e0b',
 };
@@ -28,6 +30,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
     return (
         <html lang="en">
+            <head>
+                <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+            </head>
             <body className={rajdhani.className}>
                 <AuthGuard>
                     <div className="app-container">
