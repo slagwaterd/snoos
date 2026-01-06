@@ -15,8 +15,8 @@ const BOOT_SEQUENCE = [
     { text: 'J.A.R.V.I.S. READY', delay: 1500 },
 ];
 
-export default function AiChat() {
-    const [isOpen, setIsOpen] = useState(false);
+export default function AiChat({ forceOpen = false, onClose = null }) {
+    const [isOpen, setIsOpen] = useState(forceOpen);
     const [isBooting, setIsBooting] = useState(false);
     const [bootStep, setBootStep] = useState(0);
     const [bootComplete, setBootComplete] = useState(false);
@@ -62,11 +62,24 @@ export default function AiChat() {
         }
     }, [isOpen]);
 
+    // Auto-open if forceOpen is true
+    useEffect(() => {
+        if (forceOpen && !isOpen) {
+            setIsOpen(true);
+        }
+    }, [forceOpen]);
+
     const handleOpen = () => {
         if (!isOpen) {
             setBootComplete(false);
         }
-        setIsOpen(!isOpen);
+        const newIsOpen = !isOpen;
+        setIsOpen(newIsOpen);
+
+        // Call onClose callback when closing
+        if (!newIsOpen && onClose) {
+            onClose();
+        }
     };
 
     const handleSend = async () => {
