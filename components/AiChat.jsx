@@ -280,23 +280,23 @@ export default function AiChat() {
                         transition: 'opacity 0.5s ease',
                         zIndex: 1
                     }}>
-                        {/* Header Bar */}
+                        {/* Header Bar - Compact */}
                         <div style={{
-                            padding: '1rem 2rem',
+                            padding: '0.75rem 1.25rem',
                             background: 'rgba(10, 14, 20, 0.8)',
                             backdropFilter: 'blur(20px)',
                             borderBottom: '1px solid rgba(0, 212, 255, 0.2)',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '1rem',
+                            gap: '0.75rem',
                             zIndex: 10
                         }}>
                             {/* Close Button */}
                             <button
                                 onClick={handleOpen}
                                 style={{
-                                    width: '40px',
-                                    height: '40px',
+                                    width: '36px',
+                                    height: '36px',
                                     borderRadius: '50%',
                                     background: 'rgba(0, 212, 255, 0.1)',
                                     border: '1px solid rgba(0, 212, 255, 0.3)',
@@ -304,7 +304,8 @@ export default function AiChat() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s ease'
+                                    transition: 'all 0.2s ease',
+                                    flexShrink: 0
                                 }}
                                 onMouseEnter={(e) => {
                                     e.currentTarget.style.background = 'rgba(0, 212, 255, 0.2)';
@@ -315,38 +316,39 @@ export default function AiChat() {
                                     e.currentTarget.style.transform = 'scale(1)';
                                 }}
                             >
-                                <X size={20} color="#00d4ff" />
+                                <X size={18} color="#00d4ff" />
                             </button>
 
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                 <div style={{
-                                    width: '50px',
-                                    height: '50px',
-                                    borderRadius: '12px',
+                                    width: '38px',
+                                    height: '38px',
+                                    borderRadius: '10px',
                                     background: 'radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.3), transparent)',
                                     border: '1px solid rgba(0, 212, 255, 0.4)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    flexShrink: 0
                                 }}>
                                     <img
                                         src="/jarvis-icon.png"
                                         alt="Jarvis"
-                                        width={40}
-                                        height={40}
-                                        style={{ borderRadius: '8px', objectFit: 'cover' }}
+                                        width={30}
+                                        height={30}
+                                        style={{ borderRadius: '6px', objectFit: 'cover' }}
                                     />
                                 </div>
-                                <div>
-                                    <h4 style={{ margin: 0, fontSize: '1.3rem', color: '#00d4ff', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>J.A.R.V.I.S</h4>
-                                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(122, 162, 196, 0.9)' }}>Just A Rather Very Intelligent System</p>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h4 style={{ margin: 0, fontSize: '1rem', color: '#00d4ff', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>J.A.R.V.I.S</h4>
+                                    <p style={{ margin: 0, fontSize: '0.7rem', color: 'rgba(122, 162, 196, 0.8)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Just A Rather Very Intelligent System</p>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 10px #00ff88', animation: 'pulse 2s ease-in-out infinite' }} />
-                                <span style={{ fontSize: '0.8rem', color: '#00ff88', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Online & Ready</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00ff88', boxShadow: '0 0 8px #00ff88', animation: 'pulse 2s ease-in-out infinite' }} />
+                                <span style={{ fontSize: '0.7rem', color: '#00ff88', textTransform: 'uppercase', letterSpacing: '0.03em', fontWeight: 600, whiteSpace: 'nowrap' }}>Online</span>
                             </div>
                         </div>
 
@@ -362,7 +364,7 @@ export default function AiChat() {
                                 minHeight: 0,
                                 overscrollBehavior: 'contain',
                                 WebkitOverflowScrolling: 'touch',
-                                padding: '2rem 1rem'
+                                padding: '1rem 1rem'
                             }}
                         >
                             <div style={{
@@ -370,7 +372,7 @@ export default function AiChat() {
                                 maxWidth: '900px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '1.5rem'
+                                gap: '1rem'
                             }}>
                             {messages.map((msg, i) => (
                                 <div key={i} style={{
@@ -456,7 +458,7 @@ export default function AiChat() {
 
                         {/* Input Area - Fixed Bottom, ChatGPT Style */}
                         <div style={{
-                            padding: '1.5rem 2rem 2rem',
+                            padding: '1rem 1.25rem',
                             borderTop: '1px solid rgba(0, 212, 255, 0.2)',
                             background: 'rgba(10, 14, 20, 0.9)',
                             backdropFilter: 'blur(20px)',
@@ -468,20 +470,20 @@ export default function AiChat() {
                                 maxWidth: '900px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '1rem'
+                                gap: '0.5rem'
                             }}>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                                     <input
                                         className="input"
-                                        placeholder="Ask me anything... (Press Enter to send)"
+                                        placeholder="Ask me anything..."
                                         style={{
                                             flex: 1,
-                                            borderRadius: '16px',
-                                            padding: '1rem 1.5rem',
+                                            borderRadius: '14px',
+                                            padding: '0.85rem 1.25rem',
                                             background: 'rgba(20, 35, 50, 0.7)',
                                             border: '2px solid rgba(0, 212, 255, 0.3)',
                                             marginBottom: 0,
-                                            fontSize: '1rem',
+                                            fontSize: '0.95rem',
                                             color: '#f0f8ff',
                                             transition: 'all 0.2s ease'
                                         }}
@@ -501,8 +503,8 @@ export default function AiChat() {
                                         onClick={handleSend}
                                         disabled={!input.trim() || loading}
                                         style={{
-                                            width: '56px',
-                                            height: '56px',
+                                            width: '48px',
+                                            height: '48px',
                                             borderRadius: '50%',
                                             background: input.trim() && !loading
                                                 ? 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)'
@@ -527,17 +529,17 @@ export default function AiChat() {
                                             e.currentTarget.style.transform = 'scale(1)';
                                         }}
                                     >
-                                        <Send size={24} />
+                                        <Send size={20} />
                                     </button>
                                 </div>
                                 <p style={{
                                     margin: 0,
-                                    fontSize: '0.75rem',
-                                    color: 'rgba(122, 162, 196, 0.6)',
+                                    fontSize: '0.65rem',
+                                    color: 'rgba(122, 162, 196, 0.5)',
                                     textAlign: 'center',
-                                    letterSpacing: '0.03em'
+                                    letterSpacing: '0.02em'
                                 }}>
-                                    🧠 Neural link active • 🎤 Voice command enabled • 💬 Chat with full AI knowledge
+                                    🧠 Neural link active • 💬 Full AI knowledge
                                 </p>
                             </div>
                         </div>
