@@ -7,8 +7,14 @@ export async function POST(req) {
     try {
         const { prompt, history } = await req.json();
 
-        // Get memory context to add to system prompt
-        const memoryContext = await JarvisMemory.buildMemoryContext();
+        // Get memory context to add to system prompt (with error handling)
+        let memoryContext = '';
+        try {
+            memoryContext = await JarvisMemory.buildMemoryContext();
+        } catch (memError) {
+            console.warn('Memory context failed, continuing without it:', memError);
+            // Continue without memory context if it fails
+        }
 
         const systemPrompt = `${getPersonaDescription()}
 ${memoryContext}
@@ -95,7 +101,11 @@ Je bent Jarvis - een intelligente, vriendelijke AI assistent die echt kan helpen
 
         return NextResponse.json(result);
     } catch (error) {
-        console.error('Jarvis Error:', error);
+        console.error('Jarvis Error Details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
 
         // Check for quota error
         if (error.message?.includes('429') || error.message?.includes('quota')) {
@@ -105,9 +115,17 @@ Je bent Jarvis - een intelligente, vriendelijke AI assistent die echt kan helpen
             });
         }
 
+        // Check for JSON parse errors
+        if (error.message?.includes('JSON') || error.name === 'SyntaxError') {
+            return NextResponse.json({
+                action: 'answer',
+                text: '🤔 Ik had even moeite met het antwoord formuleren. Kun je je vraag anders stellen?'
+            });
+        }
+
         return NextResponse.json({
             action: 'answer',
-            text: 'Hmm, ik had een klein technisch probleem. Kun je dat nog een keer proberen?'
+            text: `Hmm, er ging iets mis. 🔧 Probeer het nog een keer! (Error: ${error.message?.substring(0, 50) || 'Unknown'})`
         });
     }
 }
