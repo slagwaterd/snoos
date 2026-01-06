@@ -857,6 +857,17 @@ p {
     min-height: calc(100vh - 200px) !important;
   }
 
+  /* Email content area mobile fix */
+  .email-content-area {
+    min-height: 150px !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .email-content-area iframe {
+    min-height: 250px !important;
+  }
+
   /* Batch Page - Settings sidebar stacks below */
   .batch-layout {
     grid-template-columns: 1fr !important;
