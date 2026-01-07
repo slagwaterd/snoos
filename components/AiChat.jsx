@@ -425,9 +425,21 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             const audioUrl = URL.createObjectURL(audioBlob);
             console.log('[TTS] Created audio URL, playing...');
 
-            // Play audio
-            const audio = new Audio(audioUrl);
+            // Play audio with mobile-friendly settings
+            const audio = new Audio();
+            audio.src = audioUrl;
+            audio.setAttribute('playsinline', 'true'); // iOS fix
+            audio.setAttribute('webkit-playsinline', 'true'); // iOS fix
+            audio.preload = 'auto';
             audioRef.current = audio;
+
+            // Load the audio first (important for mobile!)
+            try {
+                await audio.load();
+                console.log('[TTS] Audio loaded');
+            } catch (loadError) {
+                console.error('[TTS] Audio load error:', loadError);
+            }
 
             audio.onended = () => {
                 console.log('[TTS] Audio ended');
@@ -447,14 +459,55 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 restartListeningInConversationMode();
             };
 
-            await audio.play();
-            console.log('[TTS] Audio playing!');
+            // Play with better mobile error handling
+            try {
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    await playPromise;
+                    console.log('[TTS] Audio playing!');
+                }
+            } catch (playError) {
+                console.error('[TTS] Play failed:', playError);
+                // Common on mobile: NotAllowedError, NotSupportedError
+                if (playError.name === 'NotAllowedError') {
+                    console.warn('[TTS] Autoplay blocked by browser - need user interaction');
+                    alert('🔊 Audio geblokkeerd!\n\nJe browser blokkeert autoplay. Klik OK om audio te starten.');
+                    // Try again after user clicked OK
+                    try {
+                        await audio.play();
+                        console.log('[TTS] Audio playing after user interaction!');
+                    } catch (retryError) {
+                        console.error('[TTS] Retry failed:', retryError);
+                        throw retryError;
+                    }
+                } else {
+                    throw playError;
+                }
+            }
         } catch (error) {
             console.error('[TTS] Caught error:', error);
             setIsSpeaking(false);
 
             // CRITICAL FALLBACK: restart listening in conversation mode even if TTS fails!
             restartListeningInConversationMode();
+        }
+    };
+
+    // Unlock audio for mobile (iOS fix)
+    const unlockAudio = async () => {
+        console.log('[AUDIO] Unlocking audio context for mobile...');
+        try {
+            // Create and play silent audio to unlock audio context (iOS trick)
+            const silentAudio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhAC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAA4T6gN5UAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//sQxAADwAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV');
+            silentAudio.volume = 0.01;
+            try {
+                await silentAudio.play();
+                console.log('[AUDIO] Silent audio played - context unlocked!');
+            } catch (err) {
+                console.warn('[AUDIO] Silent audio failed (ok):', err);
+            }
+        } catch (error) {
+            console.error('[AUDIO] Unlock failed:', error);
         }
     };
 
@@ -470,6 +523,9 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 setConversationMode(false);
                 return;
             }
+
+            // Unlock audio context for mobile (iOS)
+            await unlockAudio();
 
             // Start listening immediately
             try {
