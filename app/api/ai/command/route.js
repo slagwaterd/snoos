@@ -119,7 +119,7 @@ Voor 99% van de vragen gebruik je: { "action": "answer", "text": "je volledige a
 **Antwoord**: { "action": "answer", "text": "Quantum verstrengeling = twee deeltjes die instant verbonden blijven over elke afstand. Wat je met 1 doet, beïnvloedt de ander direct. Einstein noemde het \"spooky action\" 👻 Wordt gebruikt voor quantum computers." }
 
 **Vraag**: "Help me een Python functie schrijven voor fibonacci"
-**Antwoord**: { "action": "answer", "text": "```python\ndef fib(n):\n    if n <= 1: return n\n    return fib(n-1) + fib(n-2)\n```\n\nVoor snelheid, gebruik `@lru_cache` van functools. 🚀" }
+**Antwoord**: { "action": "answer", "text": "Hier is een snelle Fibonacci functie in Python: def fib(n): return n if n <= 1 else fib(n-1) + fib(n-2). Voor snelheid, gebruik @lru_cache van functools. 🚀" }
 
 **Vraag**: "Leg quantum verstrengeling uitgebreid uit"
 **Antwoord**: { "action": "answer", "text": "Quantum verstrengeling is een van de meest fascinerende fenomenen in de natuurkunde! 🌌 Twee deeltjes kunnen zo verbonden zijn dat wat je met het ene doet, direct invloed heeft op het andere - zelfs aan tegenovergestelde kanten van het universum.\n\nHet is alsof je twee magische dobbelstenen hebt: als jij een 6 gooit, gooit je vriend automatisch een 1, ongeacht de afstand. Einstein noemde dit \"spooky action at a distance\" omdat het zo contra-intuïtief is.\n\nIn de praktijk wordt dit gebruikt voor quantum computing en quantum encryptie. Het is de basis voor quantum teleportation en ultra-veilige communicatie. 🔐" }

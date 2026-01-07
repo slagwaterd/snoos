@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Loader2, Bot, Mail, Mic, MicOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getJarvisSounds } from '@/lib/jarvis-sounds';
 
 const MAX_HISTORY = 50;
 
@@ -48,7 +49,13 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
     const [isListening, setIsListening] = useState(false);
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
+    const soundsRef = useRef(null);
     const router = useRouter();
+
+    // Initialize Jarvis sounds
+    useEffect(() => {
+        soundsRef.current = getJarvisSounds();
+    }, []);
 
     const scrollToBottom = (behavior = 'smooth') => {
         if (chatEndRef.current) {
@@ -70,6 +77,9 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             setIsBooting(true);
             setBootStep(0);
 
+            // Play boot sound
+            soundsRef.current?.playBootSequence();
+
             BOOT_SEQUENCE.forEach((step, index) => {
                 setTimeout(() => {
                     setBootStep(index + 1);
@@ -77,6 +87,8 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                         setTimeout(() => {
                             setIsBooting(false);
                             setBootComplete(true);
+                            // Play completion sound
+                            soundsRef.current?.playOpen();
                         }, 600);
                     }
                 }, step.delay);
@@ -151,15 +163,19 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
         if (isListening) {
             recognitionRef.current.stop();
             setIsListening(false);
+            soundsRef.current?.playVoiceEnd();
         } else {
             recognitionRef.current.start();
             setIsListening(true);
+            soundsRef.current?.playVoiceStart();
         }
     };
 
     const handleOpen = () => {
         if (!isOpen) {
             setBootComplete(false);
+            // Play open sound when opening
+            soundsRef.current?.playOpen();
         }
         const newIsOpen = !isOpen;
         setIsOpen(newIsOpen);
@@ -258,6 +274,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 // Set timer
                 const seconds = data.seconds;
                 setTimeout(() => {
+                    soundsRef.current?.playAlert();
                     new Notification('⏰ Jarvis Timer', {
                         body: data.label || 'Timer afgelopen!',
                         icon: '/jarvis-icon.png'
@@ -271,6 +288,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 // Set reminder
                 const seconds = data.seconds;
                 setTimeout(() => {
+                    soundsRef.current?.playAlert();
                     new Notification('🔔 Jarvis Reminder', {
                         body: data.message,
                         icon: '/jarvis-icon.png'
@@ -308,6 +326,9 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             } else {
                 setMessages(prev => [...prev, { role: 'assistant', text: 'Hmm, dat is interessant. Vertel me meer of vraag iets anders!' }]);
             }
+
+            // Play message received sound
+            soundsRef.current?.playMessageReceived();
         } catch (err) {
             console.error('Jarvis error:', err);
             setMessages(prev => [...prev, { role: 'assistant', text: 'Oei, er ging iets mis. Probeer het nog eens!' }]);
