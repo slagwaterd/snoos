@@ -65,12 +65,22 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
         autoSpeak: true,
         speakWelcome: true // Speak welcome greeting on login
     });
+    const [debugLogs, setDebugLogs] = useState([]);
+    const [showDebugPanel, setShowDebugPanel] = useState(false);
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
     const soundsRef = useRef(null);
     const silenceTimerRef = useRef(null);
     const audioRef = useRef(null);
     const router = useRouter();
+
+    // Debug logger - saves all logs
+    const debugLog = (message, ...args) => {
+        const timestamp = new Date().toLocaleTimeString('nl-NL');
+        const logEntry = `[${timestamp}] ${message} ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ')}`;
+        console.log(message, ...args);
+        setDebugLogs(prev => [...prev.slice(-100), logEntry]); // Keep last 100 logs
+    };
 
     // Initialize Jarvis sounds
     useEffect(() => {
@@ -377,16 +387,16 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
     // Text-to-Speech function for conversation mode
     const speakText = async (text) => {
-        console.log('[TTS] Called with text:', text?.substring(0, 50));
+        debugLog('🔊 [TTS] Called with text:', text?.substring(0, 50));
 
         if (!text) {
-            console.log('[TTS] No text, returning');
+            debugLog('🔊 [TTS] No text, returning');
             return;
         }
 
         // In conversation mode, ALTIJD spreken - autoSpeak wordt genegeerd!
         if (!conversationMode && !settings.autoSpeak) {
-            console.log('[TTS] Not in conversation mode and autoSpeak disabled, skipping');
+            debugLog('🔊 [TTS] Not in conversation mode and autoSpeak disabled, skipping');
             return;
         }
 
@@ -397,12 +407,15 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             .replace(/\n\n/g, '. ')
             .trim();
 
-        console.log('[TTS] Cleaned text:', cleanText.substring(0, 50));
+        debugLog('🔊 [TTS] Cleaned text:', cleanText.substring(0, 50));
 
         // MOBILE: Use browser TTS directly (works 100% of time!)
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        debugLog('🔊 [TTS] Is mobile:', isMobile);
+        debugLog('🔊 [TTS] SpeechSynthesis available:', 'speechSynthesis' in window);
+
         if (isMobile && 'speechSynthesis' in window) {
-            console.log('[TTS] Mobile detected - using browser TTS directly (geen API calls!)');
+            debugLog('🔊 [TTS] Using browser TTS directly (mobile mode!)');
             setIsSpeaking(true);
 
             // Cancel any ongoing speech
@@ -412,15 +425,19 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
             // Try to find Dutch voice
             let voices = speechSynthesis.getVoices();
+            debugLog('🔊 [TTS] Available voices:', voices.length);
+
             if (voices.length === 0) {
-                console.warn('[Browser TTS] No voices loaded yet, using default');
+                debugLog('🔊 [TTS] ⚠️ No voices loaded yet, using default');
             } else {
                 const dutchVoice = voices.find(v => v.lang.startsWith('nl')) ||
                                  voices.find(v => v.lang.startsWith('en-GB')) ||
                                  voices.find(v => v.lang.startsWith('en'));
                 if (dutchVoice) {
                     utterance.voice = dutchVoice;
-                    console.log('[Browser TTS] Using voice:', dutchVoice.name);
+                    debugLog('🔊 [TTS] Using voice:', dutchVoice.name, dutchVoice.lang);
+                } else {
+                    debugLog('🔊 [TTS] ⚠️ No Dutch/English voice found, using default');
                 }
             }
 
@@ -429,20 +446,28 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             utterance.volume = 1.0;
             utterance.lang = 'nl-NL';
 
+            utterance.onstart = () => {
+                debugLog('🔊 [TTS] ✅ Speech started!');
+            };
+
             utterance.onend = () => {
-                console.log('[Browser TTS] Speech ended');
+                debugLog('🔊 [TTS] Speech ended');
                 setIsSpeaking(false);
                 restartListeningInConversationMode();
             };
 
             utterance.onerror = (e) => {
-                console.error('[Browser TTS] Error:', e);
+                debugLog('🔊 [TTS] ❌ Error:', e.error, e.message);
                 setIsSpeaking(false);
                 restartListeningInConversationMode();
             };
 
-            speechSynthesis.speak(utterance);
-            console.log('[Browser TTS] Speaking on mobile - 100% reliable! 🔊');
+            try {
+                speechSynthesis.speak(utterance);
+                debugLog('🔊 [TTS] speechSynthesis.speak() called');
+            } catch (error) {
+                debugLog('🔊 [TTS] ❌ Exception calling speak():', error.message);
+            }
             return; // Done, don't try OpenAI TTS
         }
 
@@ -621,44 +646,53 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
     // Toggle conversation mode - microfoon direct AAN!
     const toggleConversationMode = async () => {
+        debugLog('🎤 [CONVO] Toggle clicked! Current mode:', conversationMode);
+        debugLog('🎤 [CONVO] Recognition available:', !!recognitionRef.current);
+        debugLog('🎤 [CONVO] SpeechSynthesis available:', 'speechSynthesis' in window);
+
         const newMode = !conversationMode;
         setConversationMode(newMode);
+        debugLog('🎤 [CONVO] New mode:', newMode);
 
         if (newMode) {
             // 🎤 DIRECT MICROFOON AAN - geen greeting meer!
             if (!recognitionRef.current) {
+                debugLog('🎤 [CONVO] ❌ Recognition NOT available!');
                 alert('Voice input niet ondersteund in deze browser 🎤');
                 setConversationMode(false);
                 return;
             }
+
+            debugLog('🎤 [CONVO] Starting conversation mode...');
 
             // Unlock audio context for mobile (iOS)
             await unlockAudio();
 
             // Start listening immediately
             try {
+                debugLog('🎤 [CONVO] Starting recognition...');
                 setInput('');
                 recognitionRef.current.start();
                 setIsListening(true);
                 soundsRef.current?.playVoiceStart();
+                debugLog('🎤 [CONVO] ✅ Recognition started successfully!');
 
                 // Request Wake Lock to keep conversation going in background
                 if ('wakeLock' in navigator) {
                     try {
                         const wakeLock = await navigator.wakeLock.request('screen');
-                        console.log('Wake Lock activated - conversation can continue in background');
-
-                        // Store wake lock reference for cleanup
+                        debugLog('🎤 [CONVO] Wake Lock activated');
                         window.jarvisWakeLock = wakeLock;
                     } catch (err) {
-                        console.warn('Wake Lock failed (ok op desktop):', err);
+                        debugLog('🎤 [CONVO] Wake Lock failed (ok):', err.message);
                     }
                 }
             } catch (error) {
-                console.error('Failed to start listening:', error);
+                debugLog('🎤 [CONVO] ❌ Failed to start listening:', error.message);
                 setConversationMode(false);
             }
         } else {
+            debugLog('🎤 [CONVO] Stopping conversation mode...');
             // Stop any ongoing audio/recognition
             if (audioRef.current) {
                 audioRef.current.pause();
@@ -674,7 +708,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             if (window.jarvisWakeLock) {
                 window.jarvisWakeLock.release();
                 window.jarvisWakeLock = null;
-                console.log('Wake Lock released');
+                debugLog('🎤 [CONVO] Wake Lock released');
             }
         }
     };
@@ -1578,6 +1612,40 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                     flexDirection: 'column',
                                     gap: '0.75rem'
                                 }}>
+                                    {/* Debug Logs Button */}
+                                    <button
+                                        onClick={() => {
+                                            setShowDebugPanel(true);
+                                            setSidebarOpen(false);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.75rem',
+                                            borderRadius: '8px',
+                                            background: 'rgba(255, 165, 0, 0.1)',
+                                            border: '1px solid rgba(255, 165, 0, 0.3)',
+                                            color: '#ffa500',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 500,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(255, 165, 0, 0.2)';
+                                            e.currentTarget.style.transform = 'translateX(5px)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'rgba(255, 165, 0, 0.1)';
+                                            e.currentTarget.style.transform = 'translateX(0)';
+                                        }}
+                                    >
+                                        <Bot size={16} color="#ffa500" />
+                                        <span>Debug Logs ({debugLogs.length})</span>
+                                    </button>
+
                                     {/* Settings Button */}
                                     <button
                                         onClick={() => {
@@ -1889,6 +1957,144 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                                 transition: 'all 0.2s ease'
                                             }} />
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Debug Panel Modal */}
+                        {showDebugPanel && (
+                            <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(0, 0, 0, 0.9)',
+                                backdropFilter: 'blur(10px)',
+                                zIndex: 300,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                animation: 'fadeIn 0.2s ease-out',
+                                padding: '1rem'
+                            }}
+                                onClick={() => setShowDebugPanel(false)}
+                            >
+                                <div
+                                    style={{
+                                        width: '100%',
+                                        maxWidth: '800px',
+                                        height: '90%',
+                                        background: 'rgba(10, 14, 20, 0.98)',
+                                        borderRadius: '16px',
+                                        border: '2px solid rgba(255, 165, 0, 0.5)',
+                                        padding: '1.5rem',
+                                        boxShadow: '0 10px 50px rgba(255, 165, 0, 0.3)',
+                                        animation: 'slideInFromBottom 0.3s ease-out',
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {/* Debug Header */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <h3 style={{ margin: 0, color: '#ffa500', fontSize: '1.3rem', fontWeight: 600 }}>
+                                            🔧 DEBUG LOGS
+                                        </h3>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={() => {
+                                                    const logsText = debugLogs.join('\n');
+                                                    navigator.clipboard.writeText(logsText);
+                                                    alert('Logs gekopieerd! 📋');
+                                                }}
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '8px',
+                                                    background: 'rgba(0, 212, 255, 0.1)',
+                                                    border: '1px solid rgba(0, 212, 255, 0.3)',
+                                                    color: '#00d4ff',
+                                                    fontSize: '0.8rem',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                📋 Copy
+                                            </button>
+                                            <button
+                                                onClick={() => setDebugLogs([])}
+                                                style={{
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '8px',
+                                                    background: 'rgba(255, 68, 68, 0.1)',
+                                                    border: '1px solid rgba(255, 68, 68, 0.3)',
+                                                    color: '#ff4444',
+                                                    fontSize: '0.8rem',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                🗑️ Clear
+                                            </button>
+                                            <button
+                                                onClick={() => setShowDebugPanel(false)}
+                                                style={{
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '50%',
+                                                    background: 'rgba(255, 68, 68, 0.1)',
+                                                    border: '1px solid rgba(255, 68, 68, 0.3)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <X size={18} color="#ff4444" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Logs Container */}
+                                    <div style={{
+                                        flex: 1,
+                                        background: 'rgba(0, 0, 0, 0.5)',
+                                        borderRadius: '8px',
+                                        padding: '1rem',
+                                        overflowY: 'auto',
+                                        fontFamily: 'monospace',
+                                        fontSize: '0.75rem',
+                                        lineHeight: '1.6',
+                                        color: '#00ff88'
+                                    }}>
+                                        {debugLogs.length === 0 ? (
+                                            <div style={{ color: 'rgba(122, 162, 196, 0.5)', textAlign: 'center', padding: '2rem' }}>
+                                                Geen logs nog. Probeer conversation mode of replay buttons! 🎤
+                                            </div>
+                                        ) : (
+                                            debugLogs.map((log, i) => (
+                                                <div key={i} style={{
+                                                    marginBottom: '0.5rem',
+                                                    color: log.includes('❌') ? '#ff4444' :
+                                                           log.includes('✅') ? '#00ff88' :
+                                                           log.includes('⚠️') ? '#ffa500' :
+                                                           '#00d4ff'
+                                                }}>
+                                                    {log}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    {/* Info Footer */}
+                                    <div style={{
+                                        marginTop: '1rem',
+                                        padding: '0.75rem',
+                                        background: 'rgba(255, 165, 0, 0.1)',
+                                        borderRadius: '8px',
+                                        fontSize: '0.75rem',
+                                        color: 'rgba(122, 162, 196, 0.8)'
+                                    }}>
+                                        📱 Test conversation mode & replay buttons. Logs verschijnen hier automatisch!
                                     </div>
                                 </div>
                             </div>
