@@ -15,14 +15,34 @@ const BOOT_SEQUENCE = [
     { text: 'J.A.R.V.I.S. READY', delay: 1500 },
 ];
 
+// Cool welcome messages that fade away like snow in the sun ❄️☀️
+const getWelcomeMessage = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const day = now.toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const time = now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
+    const greetings = [
+        `Good day, sir. 🎩`,
+        `Hi sir! 👋`,
+        `Feelin' like Batman this ${hour >= 18 || hour < 6 ? 'night' : 'day'}? 🦇`,
+        `Ready when you are, sir. ⚡`,
+        `At your service. 🎯`,
+        `Systems online. Let's roll. 🚀`,
+        `What's the mission today, boss? 💼`,
+        `Locked and loaded. 🔥`
+    ];
+
+    const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+    return { role: 'assistant', text: greeting, timestamp: `${day} • ${time}`, fadeOut: true };
+};
+
 export default function AiChat({ forceOpen = false, onClose = null }) {
     const [isOpen, setIsOpen] = useState(forceOpen);
     const [isBooting, setIsBooting] = useState(false);
     const [bootStep, setBootStep] = useState(0);
     const [bootComplete, setBootComplete] = useState(false);
-    const [messages, setMessages] = useState([
-        { role: 'assistant', text: 'Hey! 👋 Ik ben J.A.R.V.I.S - je persoonlijke AI assistent.\n\nIk kan je helpen met:\n• 📧 Emails schrijven en versturen\n• 👥 Contacten beheren\n• 💬 Algemene vragen beantwoorden\n• 🤔 Advies en suggesties geven\n\nWaar kan ik je mee helpen vandaag? 😊' }
-    ]);
+    const [messages, setMessages] = useState([getWelcomeMessage()]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const chatEndRef = useRef(null);
@@ -68,6 +88,20 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             setIsOpen(true);
         }
     }, [forceOpen]);
+
+    // Fade out welcome message like snow in the sun ❄️☀️
+    useEffect(() => {
+        if (messages.length === 1 && messages[0].fadeOut) {
+            const timer = setTimeout(() => {
+                setMessages(msgs => msgs.map(m => ({ ...m, fading: true })));
+                setTimeout(() => {
+                    setMessages([]);
+                }, 1500); // Remove after fade animation completes
+            }, 3000); // Show for 3 seconds before fading
+
+            return () => clearTimeout(timer);
+        }
+    }, [messages]);
 
     const handleOpen = () => {
         if (!isOpen) {
@@ -456,7 +490,9 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                     width: '100%',
                                     display: 'flex',
                                     justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                                    animation: 'messageSlideIn 0.3s ease-out'
+                                    animation: msg.fading
+                                        ? 'fadeOutLikeSnow 1.5s ease-out forwards'
+                                        : 'messageSlideIn 0.3s ease-out'
                                 }}>
                                     <div style={{
                                         maxWidth: '75%',
@@ -477,6 +513,16 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                         backdropFilter: msg.role === 'assistant' ? 'blur(10px)' : 'none'
                                     }}>
                                         {msg.text}
+                                        {msg.timestamp && (
+                                            <div style={{
+                                                marginTop: '0.5rem',
+                                                fontSize: '0.7rem',
+                                                color: 'rgba(122, 162, 196, 0.6)',
+                                                textAlign: 'center'
+                                            }}>
+                                                {msg.timestamp}
+                                            </div>
+                                        )}
 
                                         {msg.action?.action === 'send_email' && (
                                             <button
@@ -570,6 +616,10 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                         onFocus={(e) => {
                                             e.target.style.borderColor = 'rgba(0, 212, 255, 0.6)';
                                             e.target.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.2)';
+                                            // Smooth scroll to input when keyboard opens (mobile fix)
+                                            setTimeout(() => {
+                                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            }, 300);
                                         }}
                                         onBlur={(e) => {
                                             e.target.style.borderColor = 'rgba(0, 212, 255, 0.3)';
