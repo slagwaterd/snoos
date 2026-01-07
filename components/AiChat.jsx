@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Loader2, Bot, Mail, Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2, Bot, Mail, Mic, MicOff, Phone, PhoneOff, Menu, Search, Plus, Trash2, Edit2, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getJarvisSounds } from '@/lib/jarvis-sounds';
+import { JarvisSessions } from '@/lib/jarvis-sessions';
 
 const MAX_HISTORY = 50;
 
@@ -49,6 +50,11 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
     const [isListening, setIsListening] = useState(false);
     const [conversationMode, setConversationMode] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sessions, setSessions] = useState([]);
+    const [currentSessionId, setCurrentSessionId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showExportMenu, setShowExportMenu] = useState(false);
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
     const soundsRef = useRef(null);
@@ -186,6 +192,41 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
         }
     }, []);
 
+    // Keyboard shortcuts
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleKeyDown = (e) => {
+            // Ctrl+K → New chat
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                handleNewChat();
+            }
+            // Ctrl+/ → Toggle conversation mode
+            else if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+                e.preventDefault();
+                toggleConversationMode();
+            }
+            // Ctrl+M → Toggle mic
+            else if ((e.ctrlKey || e.metaKey) && e.key === 'm') {
+                e.preventDefault();
+                toggleVoiceInput();
+            }
+            // Esc → Close Jarvis
+            else if (e.key === 'Escape') {
+                e.preventDefault();
+                if (sidebarOpen) {
+                    setSidebarOpen(false);
+                } else {
+                    handleOpen();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, sidebarOpen, conversationMode, isListening]);
+
     const toggleVoiceInput = () => {
         if (!recognitionRef.current) {
             alert('Voice input niet ondersteund in deze browser 🎤');
@@ -209,7 +250,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
     // Text-to-Speech function for conversation mode
     const speakText = async (text) => {
-        if (!conversationMode || !text) return;
+        if (!text) return;
 
         try {
             setIsSpeaking(true);
@@ -258,6 +299,184 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
         }
     };
 
+    // Toggle conversation mode with auto-greeting
+    const toggleConversationMode = async () => {
+        const newMode = !conversationMode;
+        setConversationMode(newMode);
+
+        if (newMode) {
+            // Jarvis says cool greeting when entering conversation mode
+            const greetings = [
+                "Zeg het maar",
+                "I'm listening",
+                "Fire away",
+                "What's up?",
+                "Talk to me",
+                "Ready when you are",
+                "Go ahead",
+                "Shoot",
+                "Let's talk"
+            ];
+            const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+            // Speak the greeting
+            await speakText(greeting);
+
+            // Auto-start listening after greeting (handled in speakText onended)
+        } else {
+            // Stop any ongoing audio/recognition
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current = null;
+            }
+            if (isListening && recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsSpeaking(false);
+            setIsListening(false);
+        }
+    };
+
+    // Load all sessions from backend
+    const loadSessions = async () => {
+        const allSessions = await JarvisSessions.getAllSessions();
+        setSessions(allSessions);
+        const currentId = await JarvisSessions.getCurrentSessionId();
+        setCurrentSessionId(currentId);
+    };
+
+    // Load current session on mount
+    useEffect(() => {
+        if (isOpen) {
+            loadSessions();
+        }
+    }, [isOpen]);
+
+    // Create new chat session
+    const handleNewChat = async () => {
+        // Save current messages first
+        if (currentSessionId && messages.length > 0) {
+            await JarvisSessions.updateSession(currentSessionId, {
+                messages: messages.filter(m => !m.fadeOut)
+            });
+        }
+
+        // Create new session
+        const newSession = await JarvisSessions.createNewSession();
+        setCurrentSessionId(newSession.id);
+        setMessages([getWelcomeMessage()]);
+        await loadSessions();
+        soundsRef.current?.playNotification();
+    };
+
+    // Switch to different session
+    const handleSwitchSession = async (sessionId) => {
+        // Save current messages
+        if (currentSessionId && messages.length > 0) {
+            await JarvisSessions.updateSession(currentSessionId, {
+                messages: messages.filter(m => !m.fadeOut)
+            });
+        }
+
+        // Load selected session
+        const session = await JarvisSessions.getSession(sessionId);
+        if (session) {
+            setCurrentSessionId(session.id);
+            setMessages(session.messages.length > 0 ? session.messages : [getWelcomeMessage()]);
+            await JarvisSessions.setCurrentSession(session.id);
+            setSidebarOpen(false);
+            soundsRef.current?.playMessageReceived();
+        }
+    };
+
+    // Delete session
+    const handleDeleteSession = async (sessionId, e) => {
+        e.stopPropagation();
+        if (confirm('Weet je zeker dat je deze chat wilt verwijderen?')) {
+            await JarvisSessions.deleteSession(sessionId);
+            await loadSessions();
+
+            // If deleted current session, load the new current one
+            if (sessionId === currentSessionId) {
+                const newCurrentId = await JarvisSessions.getCurrentSessionId();
+                const newSession = await JarvisSessions.getCurrentSession();
+                setCurrentSessionId(newCurrentId);
+                setMessages(newSession.messages.length > 0 ? newSession.messages : [getWelcomeMessage()]);
+            }
+        }
+    };
+
+    // Filter sessions by search query
+    const filteredSessions = sessions.filter(s =>
+        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.messages.some(m => m.text?.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
+    // Export chat to TXT
+    const exportToTxt = () => {
+        const now = new Date();
+        const timestamp = now.toLocaleDateString('nl-NL') + ' ' + now.toLocaleTimeString('nl-NL');
+
+        let content = `JARVIS CHAT EXPORT\n`;
+        content += `Exported: ${timestamp}\n`;
+        content += `Messages: ${messages.length}\n`;
+        content += `${'='.repeat(60)}\n\n`;
+
+        messages.forEach((msg, i) => {
+            if (!msg.fadeOut) {
+                content += `${msg.role === 'user' ? 'YOU' : 'JARVIS'}:\n`;
+                content += `${msg.text}\n`;
+                if (msg.timestamp) content += `[${msg.timestamp}]\n`;
+                content += `\n${'-'.repeat(40)}\n\n`;
+            }
+        });
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jarvis-chat-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        soundsRef.current?.playNotification();
+    };
+
+    // Export chat to Markdown (better than PDF for now, readable everywhere)
+    const exportToMarkdown = () => {
+        const now = new Date();
+        const timestamp = now.toLocaleDateString('nl-NL') + ' ' + now.toLocaleTimeString('nl-NL');
+
+        let content = `# JARVIS CHAT EXPORT\n\n`;
+        content += `**Exported:** ${timestamp}  \n`;
+        content += `**Messages:** ${messages.length}\n\n`;
+        content += `---\n\n`;
+
+        messages.forEach((msg, i) => {
+            if (!msg.fadeOut) {
+                content += `### ${msg.role === 'user' ? '👤 YOU' : '🤖 JARVIS'}\n\n`;
+                content += `${msg.text}\n\n`;
+                if (msg.timestamp) content += `*${msg.timestamp}*\n\n`;
+                if (msg.image) content += `![Generated Image](${msg.image})\n\n`;
+                content += `---\n\n`;
+            }
+        });
+
+        const blob = new Blob([content], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jarvis-chat-${Date.now()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        soundsRef.current?.playNotification();
+    };
+
     const handleOpen = () => {
         if (!isOpen) {
             setBootComplete(false);
@@ -278,9 +497,15 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
         const userMsg = input;
         setInput('');
-        const newMessages = [...messages, { role: 'user', text: userMsg }];
+        const userMessage = { role: 'user', text: userMsg };
+        const newMessages = [...messages, userMessage];
         setMessages(newMessages);
         setLoading(true);
+
+        // Save user message to current session
+        if (currentSessionId) {
+            await JarvisSessions.addMessage(currentSessionId, userMessage);
+        }
 
         const history = newMessages.slice(-MAX_HISTORY).map(m => ({
             role: m.role === 'user' ? 'user' : 'assistant',
@@ -296,6 +521,8 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             const data = await res.json();
 
             // Handle all actions
+            let assistantMessage = null;
+
             if (data.action === 'web_search') {
                 // Web search
                 const searchRes = await fetch('/api/jarvis/web-search', {
@@ -304,10 +531,11 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                     body: JSON.stringify({ query: data.query })
                 });
                 const searchData = await searchRes.json();
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: `🌐 Zoekresultaten voor "${data.query}":\n\n${searchData.result}\n\n_Bron: ${searchData.source}_`
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'save_note') {
                 // Save note
                 await fetch('/api/jarvis/notes', {
@@ -315,7 +543,8 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ note: data.note, action: 'save' })
                 });
-                setMessages(prev => [...prev, { role: 'assistant', text: data.text || 'Notitie opgeslagen! 📝' }]);
+                assistantMessage = { role: 'assistant', text: data.text || 'Notitie opgeslagen! 📝' };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'get_notes') {
                 // Get notes
                 const notesRes = await fetch('/api/jarvis/notes');
@@ -323,10 +552,11 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 const notesList = notesData.notes.length > 0
                     ? notesData.notes.slice(0, 10).map((n, i) => `${i + 1}. ${n.text} _(${n.timestamp})_`).join('\n\n')
                     : 'Nog geen notities opgeslagen.';
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: `📝 Je notities (${notesData.count} totaal):\n\n${notesList}`
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'generate_image') {
                 // Generate image
                 setMessages(prev => [...prev, { role: 'assistant', text: data.text || 'Bezig met afbeelding maken... 🎨' }]);
@@ -337,13 +567,15 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 });
                 const imgData = await imgRes.json();
                 if (imgData.success) {
-                    setMessages(prev => [...prev, {
+                    assistantMessage = {
                         role: 'assistant',
                         text: 'Hier is je afbeelding! 🎨',
                         image: imgData.imageUrl
-                    }]);
+                    };
+                    setMessages(prev => [...prev, assistantMessage]);
                 } else {
-                    setMessages(prev => [...prev, { role: 'assistant', text: imgData.message || 'Kon geen afbeelding maken.' }]);
+                    assistantMessage = { role: 'assistant', text: imgData.message || 'Kon geen afbeelding maken.' };
+                    setMessages(prev => [...prev, assistantMessage]);
                 }
             } else if (data.action === 'translate') {
                 // Translate
@@ -353,10 +585,11 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                     body: JSON.stringify({ text: data.text, targetLang: data.targetLang })
                 });
                 const transData = await transRes.json();
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: `🌍 Vertaling:\n\n"${transData.translation}"`
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'set_timer') {
                 // Set timer
                 const seconds = data.seconds;
@@ -367,10 +600,11 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                         icon: '/jarvis-icon.png'
                     });
                 }, seconds * 1000);
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: data.text || `Timer ingesteld voor ${seconds} seconden! ⏰`
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'set_reminder') {
                 // Set reminder
                 const seconds = data.seconds;
@@ -381,37 +615,51 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                         icon: '/jarvis-icon.png'
                     });
                 }, seconds * 1000);
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: data.text || `Reminder ingesteld! 🔔`
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'send_email') {
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: `Zeker! Ik heb een concept klaargezet voor ${data.to || 'de ontvanger'}. Klik hieronder om het te bekijken.`,
                     action: data
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'search_contacts') {
                 router.push(`/contacts?search=${encodeURIComponent(data.query)}`);
-                setMessages(prev => [...prev, { role: 'assistant', text: `Ik zoek naar "${data.query}" in je contacten...` }]);
+                assistantMessage = { role: 'assistant', text: `Ik zoek naar "${data.query}" in je contacten...` };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'batch_campaign') {
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: data.text,
                     action: { action: 'open_page', page: 'campaigns' }
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'open_page') {
-                setMessages(prev => [...prev, {
+                assistantMessage = {
                     role: 'assistant',
                     text: data.text,
                     action: data
-                }]);
+                };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'clarify') {
-                setMessages(prev => [...prev, { role: 'assistant', text: data.text }]);
+                assistantMessage = { role: 'assistant', text: data.text };
+                setMessages(prev => [...prev, assistantMessage]);
             } else if (data.action === 'answer' || data.text) {
-                setMessages(prev => [...prev, { role: 'assistant', text: data.text || data.answer }]);
+                assistantMessage = { role: 'assistant', text: data.text || data.answer };
+                setMessages(prev => [...prev, assistantMessage]);
             } else {
-                setMessages(prev => [...prev, { role: 'assistant', text: 'Hmm, dat is interessant. Vertel me meer of vraag iets anders!' }]);
+                assistantMessage = { role: 'assistant', text: 'Hmm, dat is interessant. Vertel me meer of vraag iets anders!' };
+                setMessages(prev => [...prev, assistantMessage]);
+            }
+
+            // Save assistant message to current session
+            if (currentSessionId && assistantMessage) {
+                await JarvisSessions.addMessage(currentSessionId, assistantMessage);
+                await loadSessions(); // Refresh session list
             }
 
             // Play message received sound
@@ -641,6 +889,34 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                             boxShadow: '0 4px 20px rgba(0, 212, 255, 0.15)',
                             animation: 'pulse 3s ease-in-out infinite 0.5s'
                         }}>
+                            {/* Hamburger Menu Button */}
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    borderRadius: '50%',
+                                    background: sidebarOpen ? 'rgba(0, 212, 255, 0.2)' : 'rgba(0, 212, 255, 0.1)',
+                                    border: '1px solid rgba(0, 212, 255, 0.3)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    flexShrink: 0
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(0, 212, 255, 0.2)';
+                                    e.currentTarget.style.transform = 'scale(1.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = sidebarOpen ? 'rgba(0, 212, 255, 0.2)' : 'rgba(0, 212, 255, 0.1)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                            >
+                                <Menu size={18} color="#00d4ff" />
+                            </button>
+
                             {/* Close Button */}
                             <button
                                 onClick={handleOpen}
@@ -698,7 +974,112 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+                                {/* Export Button with Dropdown */}
+                                <div style={{ position: 'relative' }}>
+                                    <button
+                                        onClick={() => setShowExportMenu(!showExportMenu)}
+                                        style={{
+                                            width: '36px',
+                                            height: '36px',
+                                            borderRadius: '50%',
+                                            background: showExportMenu ? 'rgba(0, 212, 255, 0.2)' : 'rgba(0, 212, 255, 0.1)',
+                                            border: '1px solid rgba(0, 212, 255, 0.3)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(0, 212, 255, 0.2)';
+                                            e.currentTarget.style.transform = 'scale(1.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = showExportMenu ? 'rgba(0, 212, 255, 0.2)' : 'rgba(0, 212, 255, 0.1)';
+                                            e.currentTarget.style.transform = 'scale(1)';
+                                        }}
+                                    >
+                                        <Download size={16} color="#00d4ff" />
+                                    </button>
+
+                                    {/* Export Dropdown Menu */}
+                                    {showExportMenu && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '45px',
+                                            right: 0,
+                                            background: 'rgba(10, 14, 20, 0.95)',
+                                            backdropFilter: 'blur(20px)',
+                                            border: '1px solid rgba(0, 212, 255, 0.3)',
+                                            borderRadius: '8px',
+                                            padding: '0.5rem',
+                                            minWidth: '150px',
+                                            zIndex: 1000,
+                                            boxShadow: '0 4px 20px rgba(0, 212, 255, 0.3)',
+                                            animation: 'fadeIn 0.2s ease-out'
+                                        }}>
+                                            <button
+                                                onClick={() => {
+                                                    exportToTxt();
+                                                    setShowExportMenu(false);
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.6rem 0.75rem',
+                                                    background: 'rgba(20, 35, 50, 0.5)',
+                                                    border: '1px solid rgba(0, 212, 255, 0.2)',
+                                                    borderRadius: '6px',
+                                                    color: '#f0f8ff',
+                                                    fontSize: '0.8rem',
+                                                    cursor: 'pointer',
+                                                    marginBottom: '0.5rem',
+                                                    textAlign: 'left',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(0, 212, 255, 0.15)';
+                                                    e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.4)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(20, 35, 50, 0.5)';
+                                                    e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.2)';
+                                                }}
+                                            >
+                                                📄 Export as TXT
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    exportToMarkdown();
+                                                    setShowExportMenu(false);
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.6rem 0.75rem',
+                                                    background: 'rgba(20, 35, 50, 0.5)',
+                                                    border: '1px solid rgba(0, 212, 255, 0.2)',
+                                                    borderRadius: '6px',
+                                                    color: '#f0f8ff',
+                                                    fontSize: '0.8rem',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'left',
+                                                    transition: 'all 0.2s ease'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(0, 212, 255, 0.15)';
+                                                    e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.4)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(20, 35, 50, 0.5)';
+                                                    e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.2)';
+                                                }}
+                                            >
+                                                📝 Export as Markdown
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div style={{
                                     width: '8px',
                                     height: '8px',
@@ -718,6 +1099,218 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                 }}>Online</span>
                             </div>
                         </div>
+
+                        {/* ChatGPT-Style Sidebar */}
+                        {sidebarOpen && (
+                            <div style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                bottom: 0,
+                                width: '320px',
+                                background: 'rgba(10, 14, 20, 0.95)',
+                                backdropFilter: 'blur(20px)',
+                                borderRight: '1px solid rgba(0, 212, 255, 0.2)',
+                                zIndex: 100,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                animation: 'slideInFromLeft 0.3s ease-out',
+                                boxShadow: '4px 0 30px rgba(0, 212, 255, 0.2)'
+                            }}>
+                                {/* Sidebar Header */}
+                                <div style={{
+                                    padding: '1rem',
+                                    borderBottom: '1px solid rgba(0, 212, 255, 0.2)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.75rem'
+                                }}>
+                                    {/* New Chat Button */}
+                                    <button
+                                        onClick={handleNewChat}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.75rem 1rem',
+                                            borderRadius: '10px',
+                                            background: 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)',
+                                            color: '#0a0e14',
+                                            border: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9rem',
+                                            fontWeight: 600,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.05em',
+                                            boxShadow: '0 4px 15px rgba(0, 212, 255, 0.3)',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.transform = 'scale(1.02)';
+                                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 212, 255, 0.5)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.transform = 'scale(1)';
+                                            e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 212, 255, 0.3)';
+                                        }}
+                                    >
+                                        <Plus size={18} />
+                                        <span>New Chat</span>
+                                    </button>
+
+                                    {/* Search Bar */}
+                                    <div style={{ position: 'relative' }}>
+                                        <Search size={16} color="rgba(122, 162, 196, 0.5)" style={{
+                                            position: 'absolute',
+                                            left: '0.75rem',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            pointerEvents: 'none'
+                                        }} />
+                                        <input
+                                            type="text"
+                                            placeholder="Search chats..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.65rem 0.75rem 0.65rem 2.5rem',
+                                                borderRadius: '8px',
+                                                background: 'rgba(20, 35, 50, 0.7)',
+                                                border: '1px solid rgba(0, 212, 255, 0.2)',
+                                                color: '#f0f8ff',
+                                                fontSize: '0.85rem',
+                                                outline: 'none',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onFocus={(e) => {
+                                                e.target.style.borderColor = 'rgba(0, 212, 255, 0.5)';
+                                                e.target.style.boxShadow = '0 0 10px rgba(0, 212, 255, 0.2)';
+                                            }}
+                                            onBlur={(e) => {
+                                                e.target.style.borderColor = 'rgba(0, 212, 255, 0.2)';
+                                                e.target.style.boxShadow = 'none';
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Sessions List */}
+                                <div style={{
+                                    flex: 1,
+                                    overflowY: 'auto',
+                                    padding: '0.5rem'
+                                }}>
+                                    {filteredSessions.length === 0 ? (
+                                        <div style={{
+                                            padding: '2rem 1rem',
+                                            textAlign: 'center',
+                                            color: 'rgba(122, 162, 196, 0.6)',
+                                            fontSize: '0.85rem'
+                                        }}>
+                                            {searchQuery ? 'No chats found' : 'No chats yet'}
+                                        </div>
+                                    ) : (
+                                        filteredSessions.map((session) => (
+                                            <div
+                                                key={session.id}
+                                                onClick={() => handleSwitchSession(session.id)}
+                                                style={{
+                                                    padding: '0.85rem',
+                                                    marginBottom: '0.5rem',
+                                                    borderRadius: '8px',
+                                                    background: session.id === currentSessionId
+                                                        ? 'rgba(0, 212, 255, 0.15)'
+                                                        : 'rgba(20, 35, 50, 0.5)',
+                                                    border: session.id === currentSessionId
+                                                        ? '1px solid rgba(0, 212, 255, 0.3)'
+                                                        : '1px solid transparent',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.75rem'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (session.id !== currentSessionId) {
+                                                        e.currentTarget.style.background = 'rgba(20, 35, 50, 0.8)';
+                                                        e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.2)';
+                                                    }
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (session.id !== currentSessionId) {
+                                                        e.currentTarget.style.background = 'rgba(20, 35, 50, 0.5)';
+                                                        e.currentTarget.style.borderColor = 'transparent';
+                                                    }
+                                                }}
+                                            >
+                                                <MessageSquare size={16} color={session.id === currentSessionId ? '#00d4ff' : 'rgba(122, 162, 196, 0.7)'} style={{ flexShrink: 0 }} />
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{
+                                                        fontSize: '0.85rem',
+                                                        color: session.id === currentSessionId ? '#00d4ff' : '#f0f8ff',
+                                                        fontWeight: session.id === currentSessionId ? 600 : 400,
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        marginBottom: '0.25rem'
+                                                    }}>
+                                                        {session.title}
+                                                    </div>
+                                                    <div style={{
+                                                        fontSize: '0.7rem',
+                                                        color: 'rgba(122, 162, 196, 0.6)',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                    }}>
+                                                        {session.messages.length} messages • {new Date(session.updatedAt).toLocaleDateString('nl-NL')}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => handleDeleteSession(session.id, e)}
+                                                    style={{
+                                                        width: '28px',
+                                                        height: '28px',
+                                                        borderRadius: '6px',
+                                                        background: 'rgba(255, 68, 68, 0.1)',
+                                                        border: '1px solid rgba(255, 68, 68, 0.3)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        cursor: 'pointer',
+                                                        flexShrink: 0,
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.background = 'rgba(255, 68, 68, 0.2)';
+                                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.background = 'rgba(255, 68, 68, 0.1)';
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                    }}
+                                                >
+                                                    <Trash2 size={14} color="#ff4444" />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Sidebar Footer - Info */}
+                                <div style={{
+                                    padding: '1rem',
+                                    borderTop: '1px solid rgba(0, 212, 255, 0.2)',
+                                    fontSize: '0.7rem',
+                                    color: 'rgba(122, 162, 196, 0.5)',
+                                    textAlign: 'center'
+                                }}>
+                                    {sessions.length} total chats • Last 50 saved
+                                </div>
+                            </div>
+                        )}
 
                         {/* Messages - ChatGPT Style Center Layout */}
                         <div
@@ -907,7 +1500,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
                                     {/* Conversation Mode Toggle */}
                                     <button
-                                        onClick={() => setConversationMode(!conversationMode)}
+                                        onClick={toggleConversationMode}
                                         disabled={loading || isSpeaking}
                                         title={conversationMode ? "Conversation mode aan - Jarvis spreekt!" : "Zet conversation mode aan"}
                                         style={{
