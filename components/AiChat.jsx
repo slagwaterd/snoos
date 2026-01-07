@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Loader2, Bot, Mail, Mic, MicOff } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2, Bot, Mail, Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getJarvisSounds } from '@/lib/jarvis-sounds';
 
@@ -47,14 +47,30 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const [conversationMode, setConversationMode] = useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
     const chatEndRef = useRef(null);
     const recognitionRef = useRef(null);
     const soundsRef = useRef(null);
+    const silenceTimerRef = useRef(null);
+    const audioRef = useRef(null);
     const router = useRouter();
 
     // Initialize Jarvis sounds
     useEffect(() => {
         soundsRef.current = getJarvisSounds();
+
+        // Auto-request audio/notification permissions on mount (only once)
+        const hasRequestedPermissions = localStorage.getItem('jarvis_permissions_requested');
+        if (!hasRequestedPermissions) {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            if (soundsRef.current) {
+                soundsRef.current.resume(); // Resume audio context
+            }
+            localStorage.setItem('jarvis_permissions_requested', 'true');
+        }
     }, []);
 
     const scrollToBottom = (behavior = 'smooth') => {
@@ -117,33 +133,49 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
         }
     }, [messages]);
 
-    // Request notification permissions on mount
-    useEffect(() => {
-        if (typeof window !== 'undefined' && 'Notification' in window) {
-            if (Notification.permission === 'default') {
-                Notification.requestPermission();
-            }
-        }
-    }, []);
-
-    // Setup voice recognition
+    // Setup voice recognition with auto-send
     useEffect(() => {
         if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
             const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
             const recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
+            recognition.continuous = true; // Keep listening for silence detection
+            recognition.interimResults = true; // Get interim results
             recognition.lang = 'nl-NL'; // Dutch, but will recognize English too
 
             recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+
                 setInput(transcript);
-                setIsListening(false);
+
+                // Clear previous silence timer
+                if (silenceTimerRef.current) {
+                    clearTimeout(silenceTimerRef.current);
+                }
+
+                // Auto-send after 1.5 seconds of silence
+                silenceTimerRef.current = setTimeout(() => {
+                    if (transcript.trim()) {
+                        recognition.stop();
+                        setIsListening(false);
+                        // Auto-send the message
+                        setTimeout(() => {
+                            const sendButton = document.querySelector('[data-jarvis-send]');
+                            if (sendButton && transcript.trim()) {
+                                sendButton.click();
+                            }
+                        }, 100);
+                    }
+                }, 1500);
             };
 
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
                 setIsListening(false);
+                if (silenceTimerRef.current) {
+                    clearTimeout(silenceTimerRef.current);
+                }
             };
 
             recognition.onend = () => {
@@ -164,10 +196,65 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             recognitionRef.current.stop();
             setIsListening(false);
             soundsRef.current?.playVoiceEnd();
+            if (silenceTimerRef.current) {
+                clearTimeout(silenceTimerRef.current);
+            }
         } else {
+            setInput(''); // Clear input before starting
             recognitionRef.current.start();
             setIsListening(true);
             soundsRef.current?.playVoiceStart();
+        }
+    };
+
+    // Text-to-Speech function for conversation mode
+    const speakText = async (text) => {
+        if (!conversationMode || !text) return;
+
+        try {
+            setIsSpeaking(true);
+
+            // Clean text for TTS (remove markdown, emojis for better speech)
+            const cleanText = text
+                .replace(/[🔥💡⚡✨🚀🎯📝🌐🖼️⏰🔔🎤🌍📧💬👋😊👍✅🤔👻🐍🌌🔐]/g, '')
+                .replace(/\*\*/g, '')
+                .replace(/\n\n/g, '. ')
+                .trim();
+
+            const response = await fetch('/api/jarvis/text-to-speech', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: cleanText })
+            });
+
+            if (!response.ok) throw new Error('TTS failed');
+
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+
+            // Play audio
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+
+            audio.onended = () => {
+                setIsSpeaking(false);
+                URL.revokeObjectURL(audioUrl);
+
+                // Auto-start listening again in conversation mode
+                if (conversationMode && !isListening) {
+                    setTimeout(() => toggleVoiceInput(), 500);
+                }
+            };
+
+            audio.onerror = () => {
+                setIsSpeaking(false);
+                URL.revokeObjectURL(audioUrl);
+            };
+
+            await audio.play();
+        } catch (error) {
+            console.error('TTS error:', error);
+            setIsSpeaking(false);
         }
     };
 
@@ -329,6 +416,11 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
             // Play message received sound
             soundsRef.current?.playMessageReceived();
+
+            // Speak response in conversation mode
+            if (data.text) {
+                await speakText(data.text);
+            }
         } catch (err) {
             console.error('Jarvis error:', err);
             setMessages(prev => [...prev, { role: 'assistant', text: 'Oei, er ging iets mis. Probeer het nog eens!' }]);
@@ -813,6 +905,45 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                         {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                                     </button>
 
+                                    {/* Conversation Mode Toggle */}
+                                    <button
+                                        onClick={() => setConversationMode(!conversationMode)}
+                                        disabled={loading || isSpeaking}
+                                        title={conversationMode ? "Conversation mode aan - Jarvis spreekt!" : "Zet conversation mode aan"}
+                                        style={{
+                                            width: '48px',
+                                            height: '48px',
+                                            borderRadius: '50%',
+                                            background: conversationMode
+                                                ? 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)'
+                                                : 'rgba(20, 35, 50, 0.7)',
+                                            color: conversationMode ? '#0a0e14' : '#00d4ff',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: conversationMode ? 'none' : '2px solid rgba(0, 212, 255, 0.3)',
+                                            cursor: (loading || isSpeaking) ? 'not-allowed' : 'pointer',
+                                            flexShrink: 0,
+                                            boxShadow: conversationMode ? '0 0 30px rgba(0, 255, 136, 0.6)' : 'none',
+                                            transition: 'all 0.2s ease',
+                                            animation: isSpeaking ? 'pulse 1s ease-in-out infinite' : 'none'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (!loading && !isSpeaking && !conversationMode) {
+                                                e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.6)';
+                                                e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!conversationMode) {
+                                                e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.3)';
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }
+                                        }}
+                                    >
+                                        {conversationMode ? <Phone size={20} /> : <PhoneOff size={20} />}
+                                    </button>
+
                                     <input
                                         className="input"
                                         placeholder={isListening ? "Luisteren... 🎤" : "Ask me anything..."}
@@ -846,6 +977,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                     <button
                                         onClick={handleSend}
                                         disabled={!input.trim() || loading}
+                                        data-jarvis-send="true"
                                         style={{
                                             width: '48px',
                                             height: '48px',
