@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Loader2, Bot, Mail } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2, Bot, Mail, Mic, MicOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const MAX_HISTORY = 50;
@@ -45,7 +45,9 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
     const [messages, setMessages] = useState([getWelcomeMessage()]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [isListening, setIsListening] = useState(false);
     const chatEndRef = useRef(null);
+    const recognitionRef = useRef(null);
     const router = useRouter();
 
     const scrollToBottom = (behavior = 'smooth') => {
@@ -103,6 +105,58 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
         }
     }, [messages]);
 
+    // Request notification permissions on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+    }, []);
+
+    // Setup voice recognition
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'nl-NL'; // Dutch, but will recognize English too
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                setInput(transcript);
+                setIsListening(false);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                setIsListening(false);
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            recognitionRef.current = recognition;
+        }
+    }, []);
+
+    const toggleVoiceInput = () => {
+        if (!recognitionRef.current) {
+            alert('Voice input niet ondersteund in deze browser 🎤');
+            return;
+        }
+
+        if (isListening) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+        } else {
+            recognitionRef.current.start();
+            setIsListening(true);
+        }
+    };
+
     const handleOpen = () => {
         if (!isOpen) {
             setBootComplete(false);
@@ -138,7 +192,95 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             });
             const data = await res.json();
 
-            if (data.action === 'send_email') {
+            // Handle all actions
+            if (data.action === 'web_search') {
+                // Web search
+                const searchRes = await fetch('/api/jarvis/web-search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: data.query })
+                });
+                const searchData = await searchRes.json();
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    text: `🌐 Zoekresultaten voor "${data.query}":\n\n${searchData.result}\n\n_Bron: ${searchData.source}_`
+                }]);
+            } else if (data.action === 'save_note') {
+                // Save note
+                await fetch('/api/jarvis/notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note: data.note, action: 'save' })
+                });
+                setMessages(prev => [...prev, { role: 'assistant', text: data.text || 'Notitie opgeslagen! 📝' }]);
+            } else if (data.action === 'get_notes') {
+                // Get notes
+                const notesRes = await fetch('/api/jarvis/notes');
+                const notesData = await notesRes.json();
+                const notesList = notesData.notes.length > 0
+                    ? notesData.notes.slice(0, 10).map((n, i) => `${i + 1}. ${n.text} _(${n.timestamp})_`).join('\n\n')
+                    : 'Nog geen notities opgeslagen.';
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    text: `📝 Je notities (${notesData.count} totaal):\n\n${notesList}`
+                }]);
+            } else if (data.action === 'generate_image') {
+                // Generate image
+                setMessages(prev => [...prev, { role: 'assistant', text: data.text || 'Bezig met afbeelding maken... 🎨' }]);
+                const imgRes = await fetch('/api/jarvis/generate-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: data.prompt })
+                });
+                const imgData = await imgRes.json();
+                if (imgData.success) {
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        text: 'Hier is je afbeelding! 🎨',
+                        image: imgData.imageUrl
+                    }]);
+                } else {
+                    setMessages(prev => [...prev, { role: 'assistant', text: imgData.message || 'Kon geen afbeelding maken.' }]);
+                }
+            } else if (data.action === 'translate') {
+                // Translate
+                const transRes = await fetch('/api/jarvis/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: data.text, targetLang: data.targetLang })
+                });
+                const transData = await transRes.json();
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    text: `🌍 Vertaling:\n\n"${transData.translation}"`
+                }]);
+            } else if (data.action === 'set_timer') {
+                // Set timer
+                const seconds = data.seconds;
+                setTimeout(() => {
+                    new Notification('⏰ Jarvis Timer', {
+                        body: data.label || 'Timer afgelopen!',
+                        icon: '/jarvis-icon.png'
+                    });
+                }, seconds * 1000);
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    text: data.text || `Timer ingesteld voor ${seconds} seconden! ⏰`
+                }]);
+            } else if (data.action === 'set_reminder') {
+                // Set reminder
+                const seconds = data.seconds;
+                setTimeout(() => {
+                    new Notification('🔔 Jarvis Reminder', {
+                        body: data.message,
+                        icon: '/jarvis-icon.png'
+                    });
+                }, seconds * 1000);
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    text: data.text || `Reminder ingesteld! 🔔`
+                }]);
+            } else if (data.action === 'send_email') {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
                     text: `Zeker! Ik heb een concept klaargezet voor ${data.to || 'de ontvanger'}. Klik hieronder om het te bekijken.`,
@@ -167,6 +309,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 setMessages(prev => [...prev, { role: 'assistant', text: 'Hmm, dat is interessant. Vertel me meer of vraag iets anders!' }]);
             }
         } catch (err) {
+            console.error('Jarvis error:', err);
             setMessages(prev => [...prev, { role: 'assistant', text: 'Oei, er ging iets mis. Probeer het nog eens!' }]);
         } finally {
             setLoading(false);
@@ -524,6 +667,21 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                             </div>
                                         )}
 
+                                        {msg.image && (
+                                            <img
+                                                src={msg.image}
+                                                alt="Generated by DALL-E"
+                                                style={{
+                                                    marginTop: '0.75rem',
+                                                    width: '100%',
+                                                    maxWidth: '400px',
+                                                    borderRadius: '12px',
+                                                    border: '1px solid rgba(0, 212, 255, 0.3)',
+                                                    boxShadow: '0 4px 20px rgba(0, 212, 255, 0.2)'
+                                                }}
+                                            />
+                                        )}
+
                                         {msg.action?.action === 'send_email' && (
                                             <button
                                                 onClick={() => {
@@ -596,9 +754,47 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                 gap: '0.5rem'
                             }}>
                                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                    {/* Voice Input Button */}
+                                    <button
+                                        onClick={toggleVoiceInput}
+                                        disabled={loading}
+                                        style={{
+                                            width: '48px',
+                                            height: '48px',
+                                            borderRadius: '50%',
+                                            background: isListening
+                                                ? 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)'
+                                                : 'rgba(20, 35, 50, 0.7)',
+                                            color: isListening ? '#fff' : '#00d4ff',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: isListening ? 'none' : '2px solid rgba(0, 212, 255, 0.3)',
+                                            cursor: loading ? 'not-allowed' : 'pointer',
+                                            flexShrink: 0,
+                                            boxShadow: isListening ? '0 0 30px rgba(255, 68, 68, 0.6)' : 'none',
+                                            transition: 'all 0.2s ease',
+                                            animation: isListening ? 'pulse 1s ease-in-out infinite' : 'none'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (!loading && !isListening) {
+                                                e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.6)';
+                                                e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!isListening) {
+                                                e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.3)';
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }
+                                        }}
+                                    >
+                                        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                                    </button>
+
                                     <input
                                         className="input"
-                                        placeholder="Ask me anything..."
+                                        placeholder={isListening ? "Luisteren... 🎤" : "Ask me anything..."}
                                         style={{
                                             flex: 1,
                                             borderRadius: '14px',
