@@ -360,12 +360,21 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
     // Text-to-Speech function for conversation mode
     const speakText = async (text) => {
-        if (!text) return;
+        console.log('[TTS] Called with text:', text?.substring(0, 50));
+
+        if (!text) {
+            console.log('[TTS] No text, returning');
+            return;
+        }
 
         // In conversation mode, ALTIJD spreken - autoSpeak wordt genegeerd!
-        if (!conversationMode && !settings.autoSpeak) return;
+        if (!conversationMode && !settings.autoSpeak) {
+            console.log('[TTS] Not in conversation mode and autoSpeak disabled, skipping');
+            return;
+        }
 
         try {
+            console.log('[TTS] Starting speech...');
             setIsSpeaking(true);
 
             // Clean text for TTS (remove markdown, emojis for better speech)
@@ -374,6 +383,8 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 .replace(/\*\*/g, '')
                 .replace(/\n\n/g, '. ')
                 .trim();
+
+            console.log('[TTS] Cleaned text:', cleanText.substring(0, 50));
 
             const response = await fetch('/api/jarvis/text-to-speech', {
                 method: 'POST',
@@ -385,9 +396,13 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 })
             });
 
+            console.log('[TTS] Response status:', response.status);
+
             if (!response.ok) {
                 // Check if it's a quota error
                 const errorData = await response.json().catch(() => ({}));
+                console.error('[TTS] Error response:', errorData);
+
                 if (errorData.isQuotaError || response.status === 402) {
                     console.warn('⚠️ OpenAI TTS credits zijn op!');
                     // Show alert only once per session
@@ -403,14 +418,19 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 throw new Error('TTS failed');
             }
 
+            console.log('[TTS] Got audio response, creating blob...');
             const audioBlob = await response.blob();
+            console.log('[TTS] Blob size:', audioBlob.size);
+
             const audioUrl = URL.createObjectURL(audioBlob);
+            console.log('[TTS] Created audio URL, playing...');
 
             // Play audio
             const audio = new Audio(audioUrl);
             audioRef.current = audio;
 
             audio.onended = () => {
+                console.log('[TTS] Audio ended');
                 setIsSpeaking(false);
                 URL.revokeObjectURL(audioUrl);
 
@@ -418,7 +438,8 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 restartListeningInConversationMode();
             };
 
-            audio.onerror = () => {
+            audio.onerror = (e) => {
+                console.error('[TTS] Audio playback error:', e);
                 setIsSpeaking(false);
                 URL.revokeObjectURL(audioUrl);
 
@@ -427,8 +448,9 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             };
 
             await audio.play();
+            console.log('[TTS] Audio playing!');
         } catch (error) {
-            console.error('TTS error:', error);
+            console.error('[TTS] Caught error:', error);
             setIsSpeaking(false);
 
             // CRITICAL FALLBACK: restart listening in conversation mode even if TTS fails!
