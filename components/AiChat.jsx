@@ -227,10 +227,39 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 if (silenceTimerRef.current) {
                     clearTimeout(silenceTimerRef.current);
                 }
+
+                // In conversation mode, try to restart after error
+                if (conversationMode && event.error !== 'aborted') {
+                    setTimeout(() => {
+                        if (conversationMode && !isListening) {
+                            try {
+                                recognitionRef.current.start();
+                                setIsListening(true);
+                            } catch (err) {
+                                console.error('Could not restart after error:', err);
+                            }
+                        }
+                    }, 1000);
+                }
             };
 
             recognition.onend = () => {
                 setIsListening(false);
+
+                // In conversation mode, auto-restart if not manually stopped
+                if (conversationMode) {
+                    setTimeout(() => {
+                        if (conversationMode && !isListening && !isSpeaking) {
+                            try {
+                                recognitionRef.current.start();
+                                setIsListening(true);
+                                console.log('Auto-restarted recognition in conversation mode');
+                            } catch (err) {
+                                console.error('Could not restart in onend:', err);
+                            }
+                        }
+                    }, 300);
+                }
             };
 
             recognitionRef.current = recognition;
@@ -297,16 +326,51 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
         }
     };
 
+    // Helper: restart listening in conversation mode (with retry logic)
+    const restartListeningInConversationMode = () => {
+        if (conversationMode && recognitionRef.current && !isListening) {
+            setTimeout(() => {
+                try {
+                    setInput('');
+                    recognitionRef.current.start();
+                    setIsListening(true);
+                    soundsRef.current?.playVoiceStart();
+                } catch (error) {
+                    console.error('Failed to restart listening:', error);
+
+                    // RETRY once after 1 second if it fails
+                    setTimeout(() => {
+                        if (conversationMode && !isListening) {
+                            try {
+                                recognitionRef.current.start();
+                                setIsListening(true);
+                                soundsRef.current?.playVoiceStart();
+                            } catch (retryError) {
+                                console.error('Retry failed:', retryError);
+                                // Give up and turn off conversation mode
+                                setConversationMode(false);
+                                alert('Conversation mode gestopt: microfoon kon niet herstarten 🎤');
+                            }
+                        }
+                    }, 1000);
+                }
+            }, 500);
+        }
+    };
+
     // Text-to-Speech function for conversation mode
     const speakText = async (text) => {
-        if (!text || !settings.autoSpeak) return;
+        if (!text) return;
+
+        // In conversation mode, ALTIJD spreken - autoSpeak wordt genegeerd!
+        if (!conversationMode && !settings.autoSpeak) return;
 
         try {
             setIsSpeaking(true);
 
             // Clean text for TTS (remove markdown, emojis for better speech)
             const cleanText = text
-                .replace(/[🔥💡⚡✨🚀🎯📝🌐🖼️⏰🔔🎤🌍📧💬👋😊👍✅🤔👻🐍🌌🔐]/g, '')
+                .replace(/[🔥💡⚡✨🚀🎯📝🌐🖼️⏰🔔🎤🌍📧💬👋😊👍✅🤔👻🐍🌌🔐😎]/g, '')
                 .replace(/\*\*/g, '')
                 .replace(/\n\n/g, '. ')
                 .trim();
@@ -335,31 +399,24 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 URL.revokeObjectURL(audioUrl);
 
                 // Auto-start listening again in conversation mode
-                if (conversationMode && recognitionRef.current) {
-                    setTimeout(() => {
-                        if (!isListening) {
-                            try {
-                                setInput(''); // Clear input before starting
-                                recognitionRef.current.start();
-                                setIsListening(true);
-                                soundsRef.current?.playVoiceStart();
-                            } catch (error) {
-                                console.error('Failed to restart listening:', error);
-                            }
-                        }
-                    }, 500);
-                }
+                restartListeningInConversationMode();
             };
 
             audio.onerror = () => {
                 setIsSpeaking(false);
                 URL.revokeObjectURL(audioUrl);
+
+                // FALLBACK: start listening anyway in conversation mode
+                restartListeningInConversationMode();
             };
 
             await audio.play();
         } catch (error) {
             console.error('TTS error:', error);
             setIsSpeaking(false);
+
+            // CRITICAL FALLBACK: restart listening in conversation mode even if TTS fails!
+            restartListeningInConversationMode();
         }
     };
 
