@@ -416,50 +416,50 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             debugLog('🔊 [TTS] ✅ Using browser TTS!');
             setIsSpeaking(true);
 
-            // CRITICAL iOS FIX: Check state and clear queue
+            // AGGRESSIVE iOS FIX: Full reset sequence
             try {
                 debugLog('🔊 [TTS] speaking:', speechSynthesis.speaking, 'paused:', speechSynthesis.paused);
 
-                // Cancel any ongoing speech
-                if (speechSynthesis.speaking || speechSynthesis.pending) {
-                    speechSynthesis.cancel();
-                    debugLog('🔊 [TTS] Cancelled previous speech');
-                }
+                // 1. Cancel everything
+                speechSynthesis.cancel();
+                debugLog('🔊 [TTS] 🔧 Cancelled all speech');
 
-                // Resume if paused (iOS bug fix)
+                // 2. Force voices loading (iOS init bug workaround)
+                const voices = speechSynthesis.getVoices();
+                debugLog('🔊 [TTS] 🔧 Loaded voices:', voices.length);
+
+                // 3. Resume if stuck in paused state
                 if (speechSynthesis.paused) {
                     speechSynthesis.resume();
-                    debugLog('🔊 [TTS] Resumed paused speechSynthesis');
+                    debugLog('🔊 [TTS] 🔧 Resumed from paused state');
                 }
+
+                // 4. Wait a moment for iOS to reset (critical!)
+                await new Promise(resolve => setTimeout(resolve, 50));
+                debugLog('🔊 [TTS] 🔧 Waited 50ms for reset');
+
             } catch (e) {
-                debugLog('🔊 [TTS] ⚠️ State check failed:', e.message);
+                debugLog('🔊 [TTS] ⚠️ Reset failed:', e.message);
             }
 
-            // Simple utterance
+            // Create utterance
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'nl-NL';
             utterance.rate = 1.0;
             utterance.volume = 1.0;
 
-            debugLog('🔊 [TTS] Created utterance, setting callbacks...');
+            debugLog('🔊 [TTS] Created utterance');
 
-            // Timeout: if onstart doesn't fire in 500ms, force resume
-            let startTimeout = setTimeout(() => {
-                debugLog('🔊 [TTS] ⚠️ onstart NEVER fired! Trying resume...');
-                try {
-                    speechSynthesis.resume();
-                } catch (e) {
-                    debugLog('🔊 [TTS] ❌ Resume failed:', e.message);
-                }
-            }, 500);
+            // Track if speech started
+            let hasStarted = false;
+            let resumeAttempts = 0;
 
             utterance.onstart = () => {
-                clearTimeout(startTimeout);
+                hasStarted = true;
                 debugLog('🔊 [TTS] ✅✅ SPEECH STARTED!');
             };
 
             utterance.onend = () => {
-                clearTimeout(startTimeout);
                 debugLog('🔊 [TTS] ✅ Speech ended');
                 setIsSpeaking(false);
                 if (conversationMode) {
@@ -468,7 +468,6 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
             };
 
             utterance.onerror = (e) => {
-                clearTimeout(startTimeout);
                 debugLog('🔊 [TTS] ❌ ERROR:', e.error);
                 setIsSpeaking(false);
                 if (conversationMode) {
@@ -476,21 +475,36 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                 }
             };
 
-            // Speak IMMEDIATELY (no setTimeout)
+            // Speak!
             try {
                 debugLog('🔊 [TTS] Calling speak()...');
                 speechSynthesis.speak(utterance);
                 debugLog('🔊 [TTS] ✅ speak() called!');
 
-                // iOS FIX: Force resume 100ms later
-                setTimeout(() => {
-                    if (!speechSynthesis.speaking) {
-                        debugLog('🔊 [TTS] 🔧 Still not speaking, forcing resume...');
-                        speechSynthesis.resume();
-                    }
-                }, 100);
+                // AGGRESSIVE iOS FIX: Multiple resume attempts at different intervals
+                const resumeIntervals = [50, 150, 300, 600, 1000];
+
+                resumeIntervals.forEach(delay => {
+                    setTimeout(() => {
+                        if (!hasStarted && !speechSynthesis.speaking) {
+                            resumeAttempts++;
+                            debugLog(`🔊 [TTS] 🔧 Attempt ${resumeAttempts}: Forcing resume after ${delay}ms...`);
+                            try {
+                                speechSynthesis.resume();
+                                // Also try cancel + re-speak as last resort
+                                if (delay >= 600 && !hasStarted) {
+                                    debugLog('🔊 [TTS] 🔧 Last resort: cancel + re-speak...');
+                                    speechSynthesis.cancel();
+                                    speechSynthesis.speak(utterance);
+                                }
+                            } catch (e) {
+                                debugLog('🔊 [TTS] ❌ Resume attempt failed:', e.message);
+                            }
+                        }
+                    }, delay);
+                });
+
             } catch (error) {
-                clearTimeout(startTimeout);
                 debugLog('🔊 [TTS] ❌ Exception:', error.message);
                 setIsSpeaking(false);
             }
