@@ -409,66 +409,65 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
 
         debugLog('🔊 [TTS] Cleaned text:', cleanText.substring(0, 50));
 
-        // MOBILE: Use browser TTS directly (works 100% of time!)
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        debugLog('🔊 [TTS] Is mobile:', isMobile);
+        // ALWAYS USE BROWSER TTS - simpel en betrouwbaar!
         debugLog('🔊 [TTS] SpeechSynthesis available:', 'speechSynthesis' in window);
 
-        if (isMobile && 'speechSynthesis' in window) {
-            debugLog('🔊 [TTS] Using browser TTS directly (mobile mode!)');
+        if ('speechSynthesis' in window) {
+            debugLog('🔊 [TTS] ✅ Using browser TTS!');
             setIsSpeaking(true);
 
             // Cancel any ongoing speech
-            speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-
-            // Try to find Dutch voice
-            let voices = speechSynthesis.getVoices();
-            debugLog('🔊 [TTS] Available voices:', voices.length);
-
-            if (voices.length === 0) {
-                debugLog('🔊 [TTS] ⚠️ No voices loaded yet, using default');
-            } else {
-                const dutchVoice = voices.find(v => v.lang.startsWith('nl')) ||
-                                 voices.find(v => v.lang.startsWith('en-GB')) ||
-                                 voices.find(v => v.lang.startsWith('en'));
-                if (dutchVoice) {
-                    utterance.voice = dutchVoice;
-                    debugLog('🔊 [TTS] Using voice:', dutchVoice.name, dutchVoice.lang);
-                } else {
-                    debugLog('🔊 [TTS] ⚠️ No Dutch/English voice found, using default');
-                }
+            try {
+                speechSynthesis.cancel();
+                debugLog('🔊 [TTS] Cancelled previous speech');
+            } catch (e) {
+                debugLog('🔊 [TTS] ⚠️ Cancel failed:', e.message);
             }
 
-            utterance.rate = settings.ttsSpeed || 1.0;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
+            // Simple utterance - no fancy settings
+            const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'nl-NL';
+            utterance.rate = 1.0;
+            utterance.volume = 1.0;
+
+            debugLog('🔊 [TTS] Created utterance, setting callbacks...');
 
             utterance.onstart = () => {
-                debugLog('🔊 [TTS] ✅ Speech started!');
+                debugLog('🔊 [TTS] ✅✅ SPEECH STARTED!');
             };
 
             utterance.onend = () => {
-                debugLog('🔊 [TTS] Speech ended');
+                debugLog('🔊 [TTS] ✅ Speech ended successfully');
                 setIsSpeaking(false);
-                restartListeningInConversationMode();
+                if (conversationMode) {
+                    debugLog('🔊 [TTS] Restarting listening in conversation mode...');
+                    restartListeningInConversationMode();
+                }
             };
 
             utterance.onerror = (e) => {
-                debugLog('🔊 [TTS] ❌ Error:', e.error, e.message);
+                debugLog('🔊 [TTS] ❌ ERROR:', e.error);
                 setIsSpeaking(false);
-                restartListeningInConversationMode();
+                if (conversationMode) {
+                    restartListeningInConversationMode();
+                }
             };
 
-            try {
-                speechSynthesis.speak(utterance);
-                debugLog('🔊 [TTS] speechSynthesis.speak() called');
-            } catch (error) {
-                debugLog('🔊 [TTS] ❌ Exception calling speak():', error.message);
-            }
-            return; // Done, don't try OpenAI TTS
+            // CRITICAL: Wrap in setTimeout to ensure it's after user gesture
+            setTimeout(() => {
+                try {
+                    debugLog('🔊 [TTS] Calling speechSynthesis.speak()...');
+                    speechSynthesis.speak(utterance);
+                    debugLog('🔊 [TTS] ✅ speak() called successfully!');
+                } catch (error) {
+                    debugLog('🔊 [TTS] ❌ Exception:', error.message);
+                    setIsSpeaking(false);
+                }
+            }, 10);
+
+            return; // Done!
+        } else {
+            debugLog('🔊 [TTS] ❌ SpeechSynthesis NOT available in this browser!');
         }
 
         // DESKTOP: Try OpenAI TTS (high quality)
