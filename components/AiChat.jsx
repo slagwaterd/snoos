@@ -1443,7 +1443,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                     fontWeight: 600,
                                     letterSpacing: '0.1em',
                                     textTransform: 'uppercase'
-                                }}>JARVIS</h4>
+                                }}>JSEEKA</h4>
                             </div>
 
                             {/* Online indicator */}
@@ -1871,7 +1871,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                 >
                                     {/* Settings Header */}
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                        <h3 style={{ margin: 0, color: '#00d4ff', fontSize: '1.3rem', fontWeight: 600, letterSpacing: '0.05em' }}>⚙️ JARVIS SETTINGS</h3>
+                                        <h3 style={{ margin: 0, color: '#00d4ff', fontSize: '1.3rem', fontWeight: 600, letterSpacing: '0.05em' }}>⚙️ JSEEKA SETTINGS</h3>
                                         <button
                                             onClick={() => setShowSettings(false)}
                                             style={{
@@ -1976,7 +1976,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                         <div>
                                             <div style={{ color: '#f0f8ff', fontSize: '0.9rem', fontWeight: 500 }}>🔊 Auto-Speak</div>
                                             <div style={{ color: 'rgba(122, 162, 196, 0.7)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                                                Jarvis spreekt automatisch antwoorden
+                                                JSEEKA spreekt automatisch antwoorden
                                             </div>
                                         </div>
                                         <button
@@ -2010,7 +2010,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                         <div>
                                             <div style={{ color: '#f0f8ff', fontSize: '0.9rem', fontWeight: 500 }}>👋 Welcome Greeting</div>
                                             <div style={{ color: 'rgba(122, 162, 196, 0.7)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                                                Jarvis spreekt begroeting bij inlog
+                                                JSEEKA spreekt begroeting bij inlog
                                             </div>
                                         </div>
                                         <button
@@ -2345,7 +2345,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                         backdropFilter: 'blur(10px)'
                                     }}>
                                         <Loader2 size={20} className="animate-spin" color="#00d4ff" />
-                                        <span style={{ color: 'rgba(122, 162, 196, 0.9)', fontSize: '0.9rem' }}>Jarvis is thinking...</span>
+                                        <span style={{ color: 'rgba(122, 162, 196, 0.9)', fontSize: '0.9rem' }}>JSEEKA is thinking...</span>
                                     </div>
                                 </div>
                             )}
@@ -2412,7 +2412,7 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                     <button
                                         onClick={toggleConversationMode}
                                         disabled={loading || isSpeaking}
-                                        title={conversationMode ? "Conversation mode aan - Jarvis spreekt!" : "Zet conversation mode aan"}
+                                        title={conversationMode ? "Conversation mode aan - JSEEKA spreekt!" : "Zet conversation mode aan"}
                                         style={{
                                             width: '48px',
                                             height: '48px',

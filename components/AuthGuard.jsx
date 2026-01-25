@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Lock, Eye, EyeOff, Shield } from 'lucide-react';
 
-const CORRECT_PASSWORD = 'Sikaede23';
+const CORRECT_PASSWORD = 're_XWTMD6o9_BnbZDd81fBj3KXwsiHr61udC';
 const AUTH_COOKIE = 'ironmail_auth_v2';
 const COOKIE_DAYS = 30; // Remember for 30 days
 
@@ -89,7 +89,7 @@ export default function AuthGuard({ children }) {
                     padding: '3rem',
                     boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 212, 255, 0.1)'
                 }}>
-                    {/* Jarvis Eye Icon */}
+                    {/* JSEEKA Icon */}
                     <div style={{
                         width: '100px',
                         height: '100px',
@@ -105,8 +105,8 @@ export default function AuthGuard({ children }) {
                         overflow: 'hidden'
                     }}>
                         <img
-                            src="/jarvis-icon.png"
-                            alt="J.A.R.V.I.S"
+                            src="/jseeka-icon.png"
+                            alt="JSEEKA"
                             width={80}
                             height={80}
                             className="jarvis-eye"
@@ -124,7 +124,7 @@ export default function AuthGuard({ children }) {
                         WebkitTextFillColor: 'transparent',
                         letterSpacing: '0.1em'
                     }}>
-                        J.A.R.V.I.S ACCESS
+                        JSEEKA ACCESS
                     </h1>
                     <p style={{
                         textAlign: 'center',

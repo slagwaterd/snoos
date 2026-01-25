@@ -11,7 +11,7 @@ const rajdhani = Rajdhani({
 
 export const metadata = {
     title: 'IronMail | Command Center',
-    description: 'Advanced email management with J.A.R.V.I.S integration',
+    description: 'Advanced email management with JSEEKA integration',
     manifest: '/manifest.json',
     appleWebApp: {
         capable: true,
@@ -19,7 +19,7 @@ export const metadata = {
         title: 'IronMail',
     },
     icons: {
-        icon: '/jarvis-icon.png',
+        icon: '/jseeka-icon.png',
         apple: [
             { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
         ],

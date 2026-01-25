@@ -1,7 +1,7 @@
 {
-  "name": "IronMail - J.A.R.V.I.S",
+  "name": "IronMail - JSEEKA",
   "short_name": "IronMail",
-  "description": "Advanced email management with J.A.R.V.I.S integration",
+  "description": "Advanced email management with JSEEKA integration",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0f",
@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/jarvis-icon.png",
+      "src": "/jseeka-icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/jarvis-icon.png",
+      "src": "/jseeka-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

@@ -10,15 +10,15 @@ export async function GET() {
     // If empty array (default from readData on error), return defaults
     if (Array.isArray(settings) && settings.length === 0) {
         return NextResponse.json({
-            defaultSender: "info@knowyourvip.com",
-            senderName: "KnowYourVIP",
-            domain: "knowyourvip.com",
+            defaultSender: "",
+            senderName: "",
+            domain: "",
             aiModel: "gpt-4o-mini"
         });
     }
     // Ensure senderName has a default if missing from stored settings
     const response = {
-        senderName: "KnowYourVIP",
+        senderName: "",
         ...settings
     };
     return NextResponse.json(response);

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Mail } from 'lucide-react';
 import AiChat from '@/components/AiChat';
 
-// JARVIS LANDING PAGE - Direct Chat Interface
-export default function JarvisLanding() {
+// JSEEKA LANDING PAGE - Direct Chat Interface
+export default function JseekaLanding() {
     const [showMailButton, setShowMailButton] = useState(false);
     const router = useRouter();
 
@@ -19,7 +19,7 @@ export default function JarvisLanding() {
             bottom: 0,
             zIndex: 10000
         }}>
-            {/* Jarvis chat - always open on startup */}
+            {/* JSEEKA chat - always open on startup */}
             <div style={{
                 position: 'fixed',
                 top: 0,
@@ -34,7 +34,7 @@ export default function JarvisLanding() {
                 />
             </div>
 
-            {/* Mail button appears after closing Jarvis - Floating in center */}
+            {/* Mail button appears after closing JSEEKA - Floating in center */}
             {showMailButton && (
                 <div style={{
                     position: 'fixed',

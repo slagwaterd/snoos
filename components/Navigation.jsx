@@ -103,8 +103,8 @@ export default function Navigation() {
                         animation: 'arc-reactor 3s ease-in-out infinite'
                     }}>
                         <img
-                            src="/jarvis-icon.png"
-                            alt="J.A.R.V.I.S"
+                            src="/jseeka-icon.png"
+                            alt="JSEEKA"
                             width={35}
                             height={35}
                             className="jarvis-eye"
@@ -121,7 +121,7 @@ export default function Navigation() {
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                             backgroundClip: 'text'
-                        }}>J.A.R.V.I.S</h2>
+                        }}>JSEEKA</h2>
                         <p style={{
                             margin: 0,
                             fontSize: '0.65rem',
