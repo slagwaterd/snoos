@@ -15,7 +15,8 @@ import {
     Bot,
     FolderOpen,
     Menu,
-    X
+    X,
+    LogOut
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -198,6 +199,42 @@ export default function Navigation() {
                         letterSpacing: '0.05em'
                     }}>Systems Online</span>
                 </div>
+
+                {/* Logout Button */}
+                <button
+                    onClick={() => {
+                        document.cookie = 'ironmail_auth_v2=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                        window.location.reload();
+                    }}
+                    style={{
+                        marginTop: 'auto',
+                        padding: '0.75rem 1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        borderRadius: '8px',
+                        color: 'var(--error)',
+                        background: 'rgba(255, 62, 62, 0.1)',
+                        border: '1px solid rgba(255, 62, 62, 0.3)',
+                        cursor: 'pointer',
+                        transition: 'all 0.25s ease',
+                        textTransform: 'uppercase',
+                        fontSize: '0.85rem',
+                        letterSpacing: '0.05em',
+                        flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.background = 'rgba(255, 62, 62, 0.2)';
+                        e.target.style.boxShadow = '0 0 15px rgba(255, 62, 62, 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.background = 'rgba(255, 62, 62, 0.1)';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    <LogOut size={18} />
+                    <span style={{ fontWeight: 500 }}>Logout</span>
+                </button>
             </aside>
         </>
     );
