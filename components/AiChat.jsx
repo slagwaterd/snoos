@@ -14,7 +14,7 @@ const BOOT_SEQUENCE = [
     { text: 'INITIALIZING CORE SYSTEMS...', delay: 400 },
     { text: 'QUANTUM PROCESSORS: ONLINE', delay: 800 },
     { text: 'LANGUAGE MATRIX: LOADED', delay: 1100 },
-    { text: 'J.A.R.V.I.S. READY', delay: 1500 },
+    { text: 'JSEEKA READY', delay: 1500 },
 ];
 
 // Cool welcome messages that fade away like snow in the sun ❄️☀️
@@ -1438,11 +1438,15 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                 {/* Alleen naam - geen subtitel */}
                                 <h4 style={{
                                     margin: 0,
-                                    fontSize: '0.95rem',
-                                    color: '#00d4ff',
-                                    fontWeight: 600,
-                                    letterSpacing: '0.1em',
-                                    textTransform: 'uppercase'
+                                    fontSize: '1.1rem',
+                                    fontFamily: "'Orbitron', 'Rajdhani', monospace",
+                                    fontWeight: 800,
+                                    letterSpacing: '0.15em',
+                                    textTransform: 'uppercase',
+                                    background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    filter: 'drop-shadow(0 0 6px rgba(255, 215, 0, 0.4))'
                                 }}>JSEEKA</h4>
                             </div>
 
@@ -1871,7 +1875,16 @@ export default function AiChat({ forceOpen = false, onClose = null }) {
                                 >
                                     {/* Settings Header */}
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                        <h3 style={{ margin: 0, color: '#00d4ff', fontSize: '1.3rem', fontWeight: 600, letterSpacing: '0.05em' }}>⚙️ JSEEKA SETTINGS</h3>
+                                        <h3 style={{
+                                            margin: 0,
+                                            fontSize: '1.3rem',
+                                            fontWeight: 700,
+                                            letterSpacing: '0.1em',
+                                            fontFamily: "'Orbitron', 'Rajdhani', monospace",
+                                            background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent'
+                                        }}>⚙️ JSEEKA SETTINGS</h3>
                                         <button
                                             onClick={() => setShowSettings(false)}
                                             style={{

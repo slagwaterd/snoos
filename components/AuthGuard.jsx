@@ -118,13 +118,17 @@ export default function AuthGuard({ children }) {
                     <h1 style={{
                         textAlign: 'center',
                         margin: '0 0 0.5rem',
-                        fontSize: '1.5rem',
-                        background: 'linear-gradient(135deg, #00d4ff 0%, #f5a623 100%)',
+                        fontSize: '1.8rem',
+                        fontFamily: "'Orbitron', 'Rajdhani', monospace",
+                        fontWeight: 800,
+                        background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
-                        letterSpacing: '0.1em'
+                        letterSpacing: '0.2em',
+                        textShadow: '0 0 30px rgba(255, 215, 0, 0.5)',
+                        filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.4))'
                     }}>
-                        JSEEKA ACCESS
+                        JSEEKA
                     </h1>
                     <p style={{
                         textAlign: 'center',

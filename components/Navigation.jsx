@@ -114,13 +114,16 @@ export default function Navigation() {
                     <div>
                         <h2 style={{
                             margin: 0,
-                            fontSize: '1.3rem',
-                            fontWeight: 700,
-                            letterSpacing: '0.15em',
-                            background: 'linear-gradient(135deg, #00d4ff 0%, #f5a623 100%)',
+                            fontSize: '1.4rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.2em',
+                            fontFamily: "'Orbitron', 'Rajdhani', monospace",
+                            background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%)',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text'
+                            backgroundClip: 'text',
+                            textShadow: '0 0 30px rgba(255, 215, 0, 0.5)',
+                            filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.4))'
                         }}>JSEEKA</h2>
                         <p style={{
                             margin: 0,

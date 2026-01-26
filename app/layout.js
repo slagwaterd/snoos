@@ -1,5 +1,5 @@
 import './globals.css';
-import { Rajdhani } from 'next/font/google';
+import { Rajdhani, Orbitron } from 'next/font/google';
 import Navigation from '@/components/Navigation';
 import AiChat from '@/components/AiChat';
 import AuthGuard from '@/components/AuthGuard';
@@ -7,6 +7,12 @@ import AuthGuard from '@/components/AuthGuard';
 const rajdhani = Rajdhani({
     subsets: ['latin'],
     weight: ['400', '500', '600', '700']
+});
+
+const orbitron = Orbitron({
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700', '800', '900'],
+    variable: '--font-orbitron'
 });
 
 export const metadata = {
@@ -33,7 +39,7 @@ export default function RootLayout({ children }) {
             <head>
                 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
             </head>
-            <body className={rajdhani.className}>
+            <body className={`${rajdhani.className} ${orbitron.variable}`}>
                 <AuthGuard>
                     <div className="app-container">
                         <Navigation />
