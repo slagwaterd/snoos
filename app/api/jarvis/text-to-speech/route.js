@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { openai } from '@/lib/ai';
+import { getOpenAI } from '@/lib/ai';
 
 export async function POST(req) {
     try {
         const { text, voice = 'nova', speed = 1.0 } = await req.json();
 
         // Use OpenAI TTS with configurable voice
-        const response = await openai.audio.speech.create({
+        const response = await getOpenAI().audio.speech.create({
             model: "tts-1",
             voice: voice, // nova, alloy, echo, fable, onyx, shimmer
             input: text,

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { openai } from '@/lib/ai';
+import { getOpenAI } from '@/lib/ai';
 
 export async function POST(req) {
     try {
         const { prompt } = await req.json();
 
         // Generate image with DALL-E
-        const response = await openai.images.generate({
+        const response = await getOpenAI().images.generate({
             model: "dall-e-3",
             prompt: prompt,
             n: 1,

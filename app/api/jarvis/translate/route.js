@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { openai } from '@/lib/ai';
+import { getOpenAI } from '@/lib/ai';
 
 export async function POST(req) {
     try {
         const { text, targetLang } = await req.json();
 
         // Use GPT-4o-mini for fast, cheap translations
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
                 {
