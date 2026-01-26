@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { openai } from '@/lib/openai';
+import { getOpenAI } from '@/lib/ai';
 
 export async function POST(req) {
     try {
@@ -32,7 +32,7 @@ export async function POST(req) {
                 return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }
 
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
             model: 'gpt-4o-mini',
             messages: [
                 { role: 'system', content: 'Je bent een behulpzame email assistent genaamd S-MAILER AI. Je bent expert in zakelijke communicatie en copywriting.' },

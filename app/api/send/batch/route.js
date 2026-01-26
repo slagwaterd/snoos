@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { smartAICall, logActivity } from '@/lib/ai';
-import { resend } from '@/lib/resend';
+import { getResend } from '@/lib/resend';
 import { appendData, readData } from '@/lib/storage';
 
 export async function POST(req) {
@@ -81,7 +81,7 @@ Respond with JSON: { "subject": "...", "content": "..." }`;
                 finalBody = replaceAll(content, contact);
             }
 
-            const { data, error } = await resend.emails.send({
+            const { data, error } = await getResend().emails.send({
                 from: `${senderName} <${defaultSender}>`,
                 to: [contact.email],
                 subject: finalSubject,

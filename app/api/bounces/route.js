@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { getResend } from '@/lib/resend';
 
 export async function GET() {
     try {
         // Fetch recent emails from Resend
-        const { data: emails, error } = await resend.emails.list();
+        const { data: emails, error } = await getResend().emails.list();
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
@@ -43,7 +41,7 @@ export async function GET() {
         const bouncedWithDetails = [];
         for (const email of bounced.slice(0, 10)) {
             try {
-                const { data: detail } = await resend.emails.get(email.id);
+                const { data: detail } = await getResend().emails.get(email.id);
                 bouncedWithDetails.push({
                     ...email,
                     bounceReason: detail?.last_event || 'Unknown',

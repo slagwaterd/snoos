@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { resend } from '@/lib/resend';
+import { getResend } from '@/lib/resend';
 import { appendData, readData, upsertContact } from '@/lib/storage';
 
 export async function POST(req) {
@@ -30,7 +30,7 @@ export async function POST(req) {
             console.log(`[Resend] Scheduling email for: ${scheduledAt}`);
         }
 
-        const { data, error } = await resend.emails.send(emailOptions);
+        const { data, error } = await getResend().emails.send(emailOptions);
 
         if (error) {
             let message = error.message;
