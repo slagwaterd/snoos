@@ -7,7 +7,7 @@ export async function POST(req) {
     try {
         const { contacts, subject, content, personalize, agentId } = await req.json();
         const settings = await readData('settings');
-        const defaultSender = settings.defaultSender || 'info@knowyourvip.com';
+        const defaultSender = settings.defaultSender || 'noreply@yourdomain.com';
         const senderName = settings.senderName || 'S-MAILER';
 
         // Load agent if specified

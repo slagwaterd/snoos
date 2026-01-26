@@ -216,7 +216,7 @@ export default function ComposePage() {
                                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>From (Verified Address)</label>
                                 <input
                                     className="input"
-                                    placeholder="info@knowyourvip.com"
+                                    placeholder="info@yourdomain.com"
                                     value={formData.from}
                                     onChange={(e) => setFormData({ ...formData, from: e.target.value })}
                                 />

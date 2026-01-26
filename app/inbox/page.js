@@ -242,7 +242,7 @@ Geef alleen de tekst van het antwoord, geen aanhef of afsluiting die ik zelf al 
                 <div className="card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
                     <InboxIcon size={48} color="var(--text-muted)" style={{ marginBottom: '1rem', opacity: 0.5 }} />
                     <h3>Je inbox is leeg</h3>
-                    <p>Wanneer iemand een email stuurt naar je Resend adres, verschijnt deze hier.</p>
+                    <p>Wanneer iemand een email stuurt naar je adres, verschijnt deze hier.</p>
                 </div>
             ) : (
                 <div className={`inbox-layout ${selectedEmail ? 'has-selection' : ''}`} style={{ display: 'grid', gap: '1.5rem' }}>

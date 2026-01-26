@@ -11,7 +11,7 @@ export async function POST(req) {
         }
 
         const settings = await readData('settings');
-        const defaultSender = (settings && !Array.isArray(settings)) ? settings.defaultSender : 'info@knowyourvip.com';
+        const defaultSender = (settings && !Array.isArray(settings)) ? settings.defaultSender : 'noreply@yourdomain.com';
         const senderName = (settings && !Array.isArray(settings)) ? settings.senderName : 'S-MAILER';
 
         const emailOptions = {

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nClean slate for resale: Remove user data, rebrand to JSEEKA\n\n- Remove all personal data \\(leads, emails, contacts, campaigns\\)\n- Remove scripts and archived files\n- Rebrand AI from JARVIS to JSEEKA in UI\n- Clear default settings \\(no KnowYourVIP branding\\)\n- New password set for access\n- Clean data folder with .gitkeep\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

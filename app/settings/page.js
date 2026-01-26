@@ -31,12 +31,12 @@ export default function SettingsPage() {
             .then(res => res.json())
             .then(data => {
                 setSettings(Array.isArray(data) ? {
-                    defaultSender: "info@knowyourvip.com",
-                    senderName: "KnowYourVIP",
-                    domain: "knowyourvip.com",
+                    defaultSender: "",
+                    senderName: "",
+                    domain: "",
                     aiModel: "gpt-4o-mini",
                     signature: ""
-                } : { senderName: "KnowYourVIP", ...data });
+                } : data);
                 setLoading(false);
             });
     }, []);
@@ -112,7 +112,7 @@ export default function SettingsPage() {
                                 <Globe size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '12px', top: '12px' }} />
                             </div>
                             <p style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.5rem', fontWeight: 500 }}>
-                                ℹ️ Zorg dat dit domein op "Verified" staat in je Resend dashboard.
+                                ℹ️ Zorg dat dit domein geverifieerd is in je email provider dashboard.
                             </p>
                         </div>
 
@@ -126,7 +126,7 @@ export default function SettingsPage() {
                                     body: JSON.stringify({
                                         to: 'table.23@icloud.com',
                                         subject: 'S-MAILER Test Connection',
-                                        text: 'Je verbinding met Resend is succesvol geconfigureerd!'
+                                        text: 'Je email verbinding is succesvol geconfigureerd!'
                                     })
                                 });
                                 const data = await res.json();
@@ -150,7 +150,7 @@ export default function SettingsPage() {
                                         data: {
                                             email_id: 'sim_' + Date.now(),
                                             from: 'Test Sender <sender@example.com>',
-                                            to: 'info@knowyourvip.com',
+                                            to: 'test@yourdomain.com',
                                             subject: 'Simulatie: Je eerste ontvangen email!',
                                             text: 'Dit is een gesimuleerd bericht om te testen of de Inbox goed werkt op localhost.',
                                             created_at: new Date().toISOString()
