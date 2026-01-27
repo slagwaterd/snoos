@@ -146,43 +146,71 @@ function CampaignImporter({ agents, onClose }) {
 
     const handleFileUpload = async (file) => {
         setLoading(true);
-        const formData = new FormData();
-        formData.append('file', file);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
 
-        const res = await fetch('/api/campaigns/import', { method: 'POST', body: formData });
-        const data = await res.json();
-        setImportResult(data);
-        setLoading(false);
-        setStep(2);
+            const res = await fetch('/api/campaigns/import', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.error) {
+                alert('Import fout: ' + data.error);
+                setLoading(false);
+                return;
+            }
+
+            setImportResult(data);
+            setStep(2);
+        } catch (err) {
+            alert('Import mislukt: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handlePaste = async (text) => {
         setLoading(true);
-        const formData = new FormData();
-        formData.append('pastedData', text);
+        try {
+            const formData = new FormData();
+            formData.append('pastedData', text);
 
-        const res = await fetch('/api/campaigns/import', { method: 'POST', body: formData });
-        const data = await res.json();
-        setImportResult(data);
-        setLoading(false);
-        setStep(2);
+            const res = await fetch('/api/campaigns/import', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.error) {
+                alert('Import fout: ' + data.error);
+                setLoading(false);
+                return;
+            }
+
+            setImportResult(data);
+            setStep(2);
+        } catch (err) {
+            alert('Import mislukt: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const saveCampaign = async () => {
-        await fetch('/api/campaigns', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: campaignName,
-                source: importResult.source,
-                recipients: importResult.recipients,
-                mapping: importResult.mapping,
-                agentId: selectedAgent?.id,
-                agentName: selectedAgent?.name,
-                status: 'ready'
-            })
-        });
-        onClose();
+        try {
+            await fetch('/api/campaigns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: campaignName,
+                    source: importResult?.source || 'import',
+                    recipients: importResult?.recipients || [],
+                    mapping: importResult?.mapping || {},
+                    agentId: selectedAgent?.id,
+                    agentName: selectedAgent?.name,
+                    status: 'ready'
+                })
+            });
+            onClose();
+        } catch (err) {
+            alert('Opslaan mislukt: ' + err.message);
+        }
     };
 
     return (
@@ -308,39 +336,47 @@ function CampaignImporter({ agents, onClose }) {
                                 <div>
                                     <p style={{ margin: 0, fontWeight: 600 }}>Import Successful!</p>
                                     <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                        {importResult.totalRows} rows imported from {importResult.source}
+                                        {importResult.totalRows || 0} rows imported from {importResult.source || 'unknown'}
                                     </p>
                                 </div>
                             </div>
 
-                            <h4 style={{ marginBottom: '0.75rem' }}>AI Column Mapping</h4>
-                            <div className="card" style={{ background: 'var(--bg)', marginBottom: '1.5rem' }}>
-                                <table style={{ width: '100%' }}>
-                                    <tbody>
-                                        {Object.entries(importResult.mapping.mappings).map(([key, value]) => (
-                                            <tr key={key}>
-                                                <td style={{ padding: '0.5rem', fontWeight: 600, textTransform: 'capitalize' }}>{key}</td>
-                                                <td style={{ padding: '0.5rem' }}><ChevronRight size={14} /></td>
-                                                <td style={{ padding: '0.5rem', color: value ? 'var(--text)' : 'var(--text-muted)' }}>
-                                                    {Array.isArray(value) ? value.join(', ') : (value || 'Not detected')}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <h4 style={{ marginBottom: '0.75rem' }}>Preview (First 3 Recipients)</h4>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                                {importResult.recipients.slice(0, 3).map((r, i) => (
-                                    <div key={i} className="card" style={{ background: 'var(--bg)', padding: '0.75rem' }}>
-                                        <p style={{ margin: 0, fontWeight: 600 }}>{r.name || 'Unknown'}</p>
-                                        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                            {r.email} {r.company && `• ${r.company}`}
-                                        </p>
+                            {importResult.mapping?.mappings && (
+                                <>
+                                    <h4 style={{ marginBottom: '0.75rem' }}>AI Column Mapping</h4>
+                                    <div className="card" style={{ background: 'var(--bg)', marginBottom: '1.5rem' }}>
+                                        <table style={{ width: '100%' }}>
+                                            <tbody>
+                                                {Object.entries(importResult.mapping.mappings).map(([key, value]) => (
+                                                    <tr key={key}>
+                                                        <td style={{ padding: '0.5rem', fontWeight: 600, textTransform: 'capitalize' }}>{key}</td>
+                                                        <td style={{ padding: '0.5rem' }}><ChevronRight size={14} /></td>
+                                                        <td style={{ padding: '0.5rem', color: value ? 'var(--text)' : 'var(--text-muted)' }}>
+                                                            {Array.isArray(value) ? value.join(', ') : (value || 'Not detected')}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                ))}
-                            </div>
+                                </>
+                            )}
+
+                            {importResult.recipients?.length > 0 && (
+                                <>
+                                    <h4 style={{ marginBottom: '0.75rem' }}>Preview (First 3 Recipients)</h4>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                                        {importResult.recipients.slice(0, 3).map((r, i) => (
+                                            <div key={i} className="card" style={{ background: 'var(--bg)', padding: '0.75rem' }}>
+                                                <p style={{ margin: 0, fontWeight: 600 }}>{r.name || 'Unknown'}</p>
+                                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                    {r.email} {r.company && `• ${r.company}`}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
 
                             <button
                                 className="btn btn-primary"
