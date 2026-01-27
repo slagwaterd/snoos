@@ -11,8 +11,12 @@ export async function POST(req) {
         }
 
         const settings = await readData('settings');
-        const defaultSender = (settings && !Array.isArray(settings)) ? settings.defaultSender : 'noreply@yourdomain.com';
-        const senderName = (settings && !Array.isArray(settings)) ? settings.senderName : 'S-MAILER';
+        const defaultSender = (settings && !Array.isArray(settings)) ? settings.defaultSender : null;
+        const senderName = (settings && !Array.isArray(settings)) ? settings.senderName : 'IronMail';
+
+        if (!from && !defaultSender) {
+            return NextResponse.json({ error: 'No sender configured. Please set a default sender in Settings.' }, { status: 400 });
+        }
 
         const emailOptions = {
             from: from || `${senderName} <${defaultSender}>`,

@@ -19,6 +19,14 @@ export const metadata = {
     title: 'IronMail | Command Center',
     description: 'Advanced email management with JSEEKA integration',
     manifest: '/manifest.json',
+    robots: {
+        index: false,
+        follow: false,
+        googleBot: {
+            index: false,
+            follow: false,
+        },
+    },
     appleWebApp: {
         capable: true,
         statusBarStyle: 'black-translucent',

@@ -120,17 +120,21 @@ export default function SettingsPage() {
                             type="button"
                             className="btn btn-outline"
                             onClick={async () => {
+                                if (!settings.defaultSender) {
+                                    alert('Vul eerst een geldig e-mailadres in bij "Default From Address".');
+                                    return;
+                                }
                                 const res = await fetch('/api/send', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
-                                        to: 'table.23@icloud.com',
+                                        to: settings.defaultSender,
                                         subject: 'S-MAILER Test Connection',
                                         text: 'Je email verbinding is succesvol geconfigureerd!'
                                     })
                                 });
                                 const data = await res.json();
-                                if (data.success) alert('Test email verzonden naar table.23@icloud.com!');
+                                if (data.success) alert(`Test email verzonden naar ${settings.defaultSender}!`);
                                 else alert('Fout: ' + (data.error || 'Onbekende fout'));
                             }}
                             style={{ width: '100%', fontSize: '0.8rem', gap: '0.5rem', marginTop: '0.5rem' }}

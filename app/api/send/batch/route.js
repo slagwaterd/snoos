@@ -7,8 +7,12 @@ export async function POST(req) {
     try {
         const { contacts, subject, content, personalize, agentId } = await req.json();
         const settings = await readData('settings');
-        const defaultSender = settings.defaultSender || 'noreply@yourdomain.com';
-        const senderName = settings.senderName || 'S-MAILER';
+        const defaultSender = settings?.defaultSender;
+        const senderName = settings?.senderName || 'IronMail';
+
+        if (!defaultSender) {
+            return NextResponse.json({ error: 'No sender configured. Please set a default sender in Settings.' }, { status: 400 });
+        }
 
         // Load agent if specified
         let agent = null;
