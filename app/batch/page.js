@@ -14,7 +14,11 @@ import {
     FolderOpen,
     Pause,
     Play,
-    History
+    History,
+    Shuffle,
+    Wand2,
+    Eye,
+    RefreshCw
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -30,9 +34,68 @@ function BatchContent() {
     const [selectedIds, setSelectedIds] = useState([]);
     const [template, setTemplate] = useState({ subject: '', content: '' });
     const [isPersonalizing, setIsPersonalizing] = useState(true);
+    const [useVariations, setUseVariations] = useState(false);
+    const [generatingVariations, setGeneratingVariations] = useState(false);
+    const [variationStats, setVariationStats] = useState(null);
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewSamples, setPreviewSamples] = useState([]);
     const [sending, setSending] = useState(false);
     const [pollingActive, setPollingActive] = useState(false);
     const router = useRouter();
+
+    // Generate AI variations
+    const generateVariations = async () => {
+        if (!template.content || template.content.length < 10) {
+            alert('Voer eerst een bericht in van minimaal 10 tekens.');
+            return;
+        }
+        setGeneratingVariations(true);
+        try {
+            const res = await fetch('/api/variations/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: template.content, language: 'nl' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setTemplate({ ...template, content: data.content });
+                setVariationStats(data.stats);
+                setUseVariations(true);
+            } else {
+                alert('Fout: ' + (data.error || 'Kon geen variaties genereren'));
+            }
+        } catch (err) {
+            alert('Fout bij genereren variaties');
+        } finally {
+            setGeneratingVariations(false);
+        }
+    };
+
+    // Generate preview samples
+    const generatePreviews = async () => {
+        const content = template.content;
+        if (!content) return;
+
+        // Client-side variation processing for preview
+        const samples = [];
+        for (let i = 0; i < 5; i++) {
+            let sample = content.replace(/\{%([^%]+)%\}/g, (match, options) => {
+                const choices = options.split('|').map(s => s.trim()).filter(Boolean);
+                if (choices.length === 0) return match;
+                return choices[Math.floor(Math.random() * choices.length)];
+            });
+            // Also replace contact tags with example data
+            sample = sample.replace(/\{\{name\}\}/g, 'Jan de Vries');
+            sample = sample.replace(/\{\{company\}\}/g, 'Voorbeeld BV');
+            sample = sample.replace(/\{\{email\}\}/g, 'jan@voorbeeld.nl');
+            samples.push(sample);
+        }
+        setPreviewSamples(samples);
+        setShowPreview(true);
+    };
+
+    // Check for variation syntax in content
+    const hasVariationSyntax = template.content?.includes('{%') && template.content?.includes('%}');
 
     const fetchData = async () => {
         const [contactsRes, campaignsRes, agentsRes] = await Promise.all([
@@ -195,7 +258,15 @@ function BatchContent() {
 
                 {/* Template */}
                 <div className="card">
-                    <h3 style={{ marginBottom: '1.5rem' }}>Email Template</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h3 style={{ margin: 0 }}>Email Template</h3>
+                        {hasVariationSyntax && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.75rem', background: 'rgba(0, 212, 255, 0.1)', borderRadius: '20px', fontSize: '0.75rem', color: 'var(--primary)' }}>
+                                <Shuffle size={12} />
+                                {variationStats ? `${variationStats.combinations.toLocaleString()} combinaties` : 'Variaties actief'}
+                            </div>
+                        )}
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div>
                             <label className="label">Subject</label>
@@ -207,17 +278,106 @@ function BatchContent() {
                             />
                         </div>
                         <div>
-                            <label className="label">Base Message</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                <label className="label" style={{ margin: 0 }}>Base Message</label>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {hasVariationSyntax && (
+                                        <button
+                                            type="button"
+                                            onClick={generatePreviews}
+                                            className="btn btn-outline"
+                                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', gap: '0.35rem' }}
+                                        >
+                                            <Eye size={12} /> Preview
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={generateVariations}
+                                        disabled={generatingVariations || !template.content}
+                                        className="btn btn-outline"
+                                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', gap: '0.35rem', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                                    >
+                                        {generatingVariations ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                                        {generatingVariations ? 'Generating...' : 'AI Variaties'}
+                                    </button>
+                                </div>
+                            </div>
                             <textarea
                                 className="textarea"
-                                style={{ minHeight: '200px' }}
-                                placeholder="Write your core message here. AI will personalize this for each recipient."
+                                style={{ minHeight: '200px', fontFamily: hasVariationSyntax ? 'monospace' : 'inherit' }}
+                                placeholder={`Schrijf je bericht hier. Je kunt variaties toevoegen met:
+{%optie1|optie2|optie3%}
+
+Voorbeeld:
+{%Hallo|Hey|Beste%} {{name}},
+
+Ik wil je {%graag informeren over|vertellen over%} onze diensten.
+
+{%Met vriendelijke groet|Groeten%}`}
                                 value={template.content}
-                                onChange={(e) => setTemplate({ ...template, content: e.target.value })}
+                                onChange={(e) => {
+                                    setTemplate({ ...template, content: e.target.value });
+                                    // Reset stats when content changes manually
+                                    if (variationStats) setVariationStats(null);
+                                }}
                             />
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                💡 Gebruik <code style={{ background: 'var(--bg)', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>{'{%optie1|optie2%}'}</code> voor variaties en <code style={{ background: 'var(--bg)', padding: '0.1rem 0.3rem', borderRadius: '3px' }}>{'{{name}}'}</code> voor contactgegevens.
+                            </p>
                         </div>
                     </div>
                 </div>
+
+                {/* Variation Preview Modal */}
+                {showPreview && (
+                    <div style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                    }} onClick={() => setShowPreview(false)}>
+                        <div className="card" style={{ width: '600px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Eye size={20} color="var(--primary)" /> Variatie Preview
+                                </h3>
+                                <button
+                                    onClick={generatePreviews}
+                                    className="btn btn-outline"
+                                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', gap: '0.35rem' }}
+                                >
+                                    <RefreshCw size={12} /> Refresh
+                                </button>
+                            </div>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                Elke ontvanger krijgt een unieke versie. Hier zijn 5 voorbeelden:
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {previewSamples.map((sample, i) => (
+                                    <div key={i} style={{
+                                        padding: '1rem',
+                                        background: 'var(--bg)',
+                                        borderRadius: '8px',
+                                        borderLeft: '3px solid var(--primary)',
+                                        fontSize: '0.85rem',
+                                        whiteSpace: 'pre-wrap'
+                                    }}>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                            Versie {i + 1}
+                                        </div>
+                                        {sample}
+                                    </div>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => setShowPreview(false)}
+                                className="btn btn-primary"
+                                style={{ width: '100%', marginTop: '1.5rem' }}
+                            >
+                                Sluiten
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <aside>

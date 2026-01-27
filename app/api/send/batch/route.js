@@ -4,6 +4,7 @@ import { getResend } from '@/lib/resend';
 import { sendSmtpEmail } from '@/lib/smtp';
 import { appendData, readData } from '@/lib/storage';
 import { notifyBatchCompleted } from '@/lib/notifications';
+import { applyVariations } from '@/lib/variations';
 
 export async function POST(req) {
     try {
@@ -76,6 +77,10 @@ Respond with JSON: { "subject": "...", "content": "..." }`;
                 finalSubject = personalized.subject;
                 finalBody = personalized.content;
             } else {
+                // Apply variations first (random selection from {%...|...%} slots)
+                finalSubject = applyVariations(subject);
+                finalBody = applyVariations(content);
+
                 // Simple tag replacement
                 const replaceAll = (str, obj) => {
                     let result = str;
@@ -85,8 +90,8 @@ Respond with JSON: { "subject": "...", "content": "..." }`;
                     result = result.replace(/\{\{title\}\}/g, obj.title || '');
                     return result;
                 };
-                finalSubject = replaceAll(subject, contact);
-                finalBody = replaceAll(content, contact);
+                finalSubject = replaceAll(finalSubject, contact);
+                finalBody = replaceAll(finalBody, contact);
             }
 
             let messageId = null;
