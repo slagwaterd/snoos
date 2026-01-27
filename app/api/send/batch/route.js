@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { smartAICall, logActivity } from '@/lib/ai';
 import { getResend } from '@/lib/resend';
+import { sendSmtpEmail } from '@/lib/smtp';
 import { appendData, readData } from '@/lib/storage';
 
 export async function POST(req) {
@@ -9,6 +10,7 @@ export async function POST(req) {
         const settings = await readData('settings');
         const defaultSender = settings?.defaultSender;
         const senderName = settings?.senderName || 'IronMail';
+        const emailProvider = settings?.emailProvider || 'server';
 
         if (!defaultSender) {
             return NextResponse.json({ error: 'No sender configured. Please set a default sender in Settings.' }, { status: 400 });
@@ -22,6 +24,7 @@ export async function POST(req) {
         }
 
         const batchResults = [];
+        const fromAddress = `${senderName} <${defaultSender}>`;
 
         for (const contact of contacts) {
             let finalBody = content;
@@ -85,16 +88,44 @@ Respond with JSON: { "subject": "...", "content": "..." }`;
                 finalBody = replaceAll(content, contact);
             }
 
-            const { data, error } = await getResend().emails.send({
-                from: `${senderName} <${defaultSender}>`,
-                to: [contact.email],
-                subject: finalSubject,
-                text: finalBody,
-            });
+            let messageId = null;
+            let sendError = null;
 
-            if (!error) {
+            if (emailProvider === 'smtp') {
+                // Use SMTP
+                try {
+                    const result = await sendSmtpEmail({
+                        from: fromAddress,
+                        to: contact.email,
+                        subject: finalSubject,
+                        text: finalBody,
+                    });
+                    messageId = result.id;
+                } catch (err) {
+                    sendError = err;
+                    console.error(`SMTP Error for ${contact.email}:`, err.message);
+                }
+            } else {
+                // Use Resend (Server API)
+                const { data, error } = await getResend().emails.send({
+                    from: fromAddress,
+                    to: [contact.email],
+                    subject: finalSubject,
+                    text: finalBody,
+                });
+
+                if (error) {
+                    sendError = error;
+                    console.error(`Server Error for ${contact.email}:`, error.message);
+                } else {
+                    messageId = data.id;
+                }
+            }
+
+            if (!sendError && messageId) {
                 await appendData('sent', {
-                    resendId: data.id,
+                    messageId,
+                    provider: emailProvider,
                     from: defaultSender,
                     to: contact.email,
                     subject: finalSubject,
@@ -103,14 +134,15 @@ Respond with JSON: { "subject": "...", "content": "..." }`;
                     batch: true,
                     agentId: agentId || null
                 });
-                batchResults.push(data.id);
+                batchResults.push(messageId);
             }
         }
 
         await logActivity('email_sent', {
             batchSize: contacts.length,
             agentId: agentId || 'none',
-            personalized: personalize
+            personalized: personalize,
+            provider: emailProvider
         }, {
             successCount: batchResults.length
         }, { status: 'success' });

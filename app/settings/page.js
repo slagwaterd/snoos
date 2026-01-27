@@ -11,7 +11,10 @@ import {
     CheckCircle2,
     Loader2,
     Send,
-    Inbox as InboxIcon
+    Inbox as InboxIcon,
+    Server,
+    Key,
+    Lock
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -20,7 +23,15 @@ export default function SettingsPage() {
         senderName: '',
         domain: '',
         aiModel: 'gpt-4o-mini',
-        signature: ''
+        signature: '',
+        emailProvider: 'server', // 'server' (Resend) or 'smtp'
+        smtp: {
+            host: '',
+            port: 587,
+            secure: false,
+            user: '',
+            pass: ''
+        }
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -35,8 +46,14 @@ export default function SettingsPage() {
                     senderName: "",
                     domain: "",
                     aiModel: "gpt-4o-mini",
-                    signature: ""
-                } : data);
+                    signature: "",
+                    emailProvider: "server",
+                    smtp: { host: '', port: 587, secure: false, user: '', pass: '' }
+                } : {
+                    ...data,
+                    emailProvider: data.emailProvider || 'server',
+                    smtp: data.smtp || { host: '', port: 587, secure: false, user: '', pass: '' }
+                });
                 setLoading(false);
             });
     }, []);
@@ -173,8 +190,117 @@ export default function SettingsPage() {
 
                     <div className="card">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                            <Server size={20} color="var(--primary)" />
+                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Email Provider</h2>
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Provider Type</label>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettings({ ...settings, emailProvider: 'server' })}
+                                    style={{
+                                        flex: 1,
+                                        padding: '0.75rem',
+                                        borderRadius: '8px',
+                                        border: settings.emailProvider === 'server' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                        background: settings.emailProvider === 'server' ? 'rgba(0, 212, 255, 0.1)' : 'transparent',
+                                        color: settings.emailProvider === 'server' ? 'var(--primary)' : 'var(--text-muted)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    <Server size={16} style={{ marginRight: '0.5rem' }} />
+                                    Server (API)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSettings({ ...settings, emailProvider: 'smtp' })}
+                                    style={{
+                                        flex: 1,
+                                        padding: '0.75rem',
+                                        borderRadius: '8px',
+                                        border: settings.emailProvider === 'smtp' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                        background: settings.emailProvider === 'smtp' ? 'rgba(0, 212, 255, 0.1)' : 'transparent',
+                                        color: settings.emailProvider === 'smtp' ? 'var(--primary)' : 'var(--text-muted)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    <Mail size={16} style={{ marginRight: '0.5rem' }} />
+                                    SMTP
+                                </button>
+                            </div>
+                        </div>
+
+                        {settings.emailProvider === 'smtp' && (
+                            <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>SMTP Host</label>
+                                    <input
+                                        className="input"
+                                        value={settings.smtp?.host || ''}
+                                        onChange={(e) => setSettings({ ...settings, smtp: { ...settings.smtp, host: e.target.value } })}
+                                        placeholder="smtp.example.com"
+                                    />
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Port</label>
+                                        <input
+                                            className="input"
+                                            type="number"
+                                            value={settings.smtp?.port || 587}
+                                            onChange={(e) => setSettings({ ...settings, smtp: { ...settings.smtp, port: parseInt(e.target.value) } })}
+                                            placeholder="587"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>SSL/TLS</label>
+                                        <select
+                                            className="input"
+                                            value={settings.smtp?.secure ? 'true' : 'false'}
+                                            onChange={(e) => setSettings({ ...settings, smtp: { ...settings.smtp, secure: e.target.value === 'true' } })}
+                                        >
+                                            <option value="false">STARTTLS (Port 587)</option>
+                                            <option value="true">SSL/TLS (Port 465)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                                        <Key size={12} style={{ marginRight: '0.25rem' }} />
+                                        Username
+                                    </label>
+                                    <input
+                                        className="input"
+                                        value={settings.smtp?.user || ''}
+                                        onChange={(e) => setSettings({ ...settings, smtp: { ...settings.smtp, user: e.target.value } })}
+                                        placeholder="your@email.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                                        <Lock size={12} style={{ marginRight: '0.25rem' }} />
+                                        Password
+                                    </label>
+                                    <input
+                                        className="input"
+                                        type="password"
+                                        value={settings.smtp?.pass || ''}
+                                        onChange={(e) => setSettings({ ...settings, smtp: { ...settings.smtp, pass: e.target.value } })}
+                                        placeholder="••••••••"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="card">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
                             <Bot size={20} color="var(--primary)" />
-                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>System Configuration</h2>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>AI Configuration</h2>
                         </div>
 
                         <div style={{ marginBottom: '1rem' }}>
