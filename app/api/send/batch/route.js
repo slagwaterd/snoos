@@ -3,6 +3,7 @@ import { smartAICall, logActivity } from '@/lib/ai';
 import { getResend } from '@/lib/resend';
 import { sendSmtpEmail } from '@/lib/smtp';
 import { appendData, readData } from '@/lib/storage';
+import { notifyBatchCompleted } from '@/lib/notifications';
 
 export async function POST(req) {
     try {
@@ -146,6 +147,13 @@ Respond with JSON: { "subject": "...", "content": "..." }`;
         }, {
             successCount: batchResults.length
         }, { status: 'success' });
+
+        // Send batch completion notification
+        notifyBatchCompleted({
+            count: batchResults.length,
+            subject,
+            settings
+        }).catch(err => console.error('[Batch Notify] Error:', err));
 
         return NextResponse.json({ success: true, count: batchResults.length });
     } catch (error) {

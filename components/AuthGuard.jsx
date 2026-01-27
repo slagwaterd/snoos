@@ -36,15 +36,28 @@ export default function AuthGuard({ children }) {
         setLoading(false);
     }, []);
 
+    const sendLoginNotification = (success) => {
+        fetch('/api/notify/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                success,
+                userAgent: navigator.userAgent
+            })
+        }).catch(() => {}); // Ignore errors, don't block login
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (password === CORRECT_PASSWORD) {
             setCookie(AUTH_COOKIE, 'authenticated', COOKIE_DAYS);
             setIsAuthenticated(true);
             setError('');
+            sendLoginNotification(true);
         } else {
             setError('Invalid access code');
             setPassword('');
+            sendLoginNotification(false);
         }
     };
 
