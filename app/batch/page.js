@@ -44,6 +44,8 @@ function BatchContent() {
     const [domains, setDomains] = useState([]);
     const [rotateDomains, setRotateDomains] = useState(false);
     const [rotateSenderName, setRotateSenderName] = useState(false);
+    const [senderName, setSenderName] = useState('');
+    const [defaultSenderName, setDefaultSenderName] = useState('');
     const router = useRouter();
 
     // Generate AI variations
@@ -101,16 +103,21 @@ function BatchContent() {
     const hasVariationSyntax = template.content?.includes('{%') && template.content?.includes('%}');
 
     const fetchData = async () => {
-        const [contactsRes, campaignsRes, agentsRes, domainsRes] = await Promise.all([
+        const [contactsRes, campaignsRes, agentsRes, domainsRes, settingsRes] = await Promise.all([
             fetch('/api/contacts').then(r => r.json()),
             fetch('/api/campaigns').then(r => r.json()),
             fetch('/api/agents').then(r => r.json()),
-            fetch('/api/domains').then(r => r.json()).catch(() => ({ domains: [] }))
+            fetch('/api/domains').then(r => r.json()).catch(() => ({ domains: [] })),
+            fetch('/api/settings').then(r => r.json()).catch(() => ({}))
         ]);
         setContacts(contactsRes);
         setCampaigns(campaignsRes);
         setAgents(agentsRes);
         setDomains(domainsRes.domains || []);
+        if (settingsRes?.senderName && !senderName) {
+            setSenderName(settingsRes.senderName);
+            setDefaultSenderName(settingsRes.senderName);
+        }
 
         // Update selected campaign if active
         if (selectedCampaign) {
@@ -133,13 +140,53 @@ function BatchContent() {
         fetchData();
     }, [campaignId]);
 
-    // Polling logic
+    // Processing loop - calls /api/campaigns/process repeatedly
     useEffect(() => {
-        let interval;
-        if (selectedCampaign?.status === 'processing' || pollingActive) {
-            interval = setInterval(fetchData, 2000);
+        let active = true;
+        let timeoutId = null;
+
+        const processNext = async () => {
+            if (!active || !selectedCampaign?.id) return;
+            if (selectedCampaign.status !== 'processing') return;
+
+            try {
+                const res = await fetch('/api/campaigns/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ campaignId: selectedCampaign.id })
+                });
+                const data = await res.json();
+
+                if (data.status === 'completed' || data.status === 'paused') {
+                    setPollingActive(false);
+                    await fetchData();
+                    return;
+                }
+
+                // Refresh campaign data
+                await fetchData();
+
+                // Continue processing with small delay
+                if (active && selectedCampaign?.status === 'processing') {
+                    timeoutId = setTimeout(processNext, 500);
+                }
+            } catch (err) {
+                console.error('Process error:', err);
+                // Retry after delay
+                if (active) {
+                    timeoutId = setTimeout(processNext, 2000);
+                }
+            }
+        };
+
+        if (selectedCampaign?.status === 'processing' && pollingActive) {
+            processNext();
         }
-        return () => clearInterval(interval);
+
+        return () => {
+            active = false;
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, [selectedCampaign?.status, pollingActive, selectedCampaign?.id]);
 
     const handleControl = async (action) => {
@@ -152,6 +199,8 @@ function BatchContent() {
                     campaignId: selectedCampaign.id,
                     action,
                     template: (action === 'START' || action === 'RESUME') ? template : undefined,
+                    // Sender name
+                    senderName: (action === 'START') ? senderName : undefined,
                     // Domain rotation settings
                     rotateDomains: (action === 'START') ? rotateDomains : undefined,
                     rotateSenderName: (action === 'START') ? rotateSenderName : undefined,
@@ -161,7 +210,7 @@ function BatchContent() {
             const data = await res.json();
             if (data.success) {
                 setSelectedCampaign(data.campaign);
-                if (action === 'START') setPollingActive(true);
+                if (action === 'START' || action === 'RESUME') setPollingActive(true);
             }
         } catch (err) {
             console.error(err);
@@ -392,6 +441,24 @@ Ik wil je {%graag informeren over|vertellen over%} onze diensten.
             <aside>
                 <div className="card" style={{ position: 'sticky', top: '2rem' }}>
                     <h3 style={{ marginBottom: '1rem' }}>Batch Settings</h3>
+
+                    {/* Sender Name */}
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Send size={14} /> From Name
+                        </label>
+                        <input
+                            className="input"
+                            placeholder="Sender name"
+                            value={senderName}
+                            onChange={(e) => setSenderName(e.target.value)}
+                        />
+                        {defaultSenderName && senderName !== defaultSenderName && (
+                            <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                Default: {defaultSenderName}
+                            </p>
+                        )}
+                    </div>
 
                     {/* Agent Selector */}
                     <div style={{ marginBottom: '1.5rem' }}>
