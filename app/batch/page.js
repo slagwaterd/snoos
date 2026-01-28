@@ -140,52 +140,19 @@ function BatchContent() {
         fetchData();
     }, [campaignId]);
 
-    // Processing loop - calls /api/campaigns/process repeatedly
+    // Status polling - worker runs on server, we just fetch updates
     useEffect(() => {
-        let active = true;
-        let timeoutId = null;
+        let interval;
 
-        const processNext = async () => {
-            if (!active || !selectedCampaign?.id) return;
-            if (selectedCampaign.status !== 'processing') return;
-
-            try {
-                const res = await fetch('/api/campaigns/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ campaignId: selectedCampaign.id })
-                });
-                const data = await res.json();
-
-                if (data.status === 'completed' || data.status === 'paused') {
-                    setPollingActive(false);
-                    await fetchData();
-                    return;
-                }
-
-                // Refresh campaign data
+        if (selectedCampaign?.status === 'processing') {
+            // Poll for status updates every 2 seconds
+            interval = setInterval(async () => {
                 await fetchData();
-
-                // Continue processing with small delay
-                if (active && selectedCampaign?.status === 'processing') {
-                    timeoutId = setTimeout(processNext, 500);
-                }
-            } catch (err) {
-                console.error('Process error:', err);
-                // Retry after delay
-                if (active) {
-                    timeoutId = setTimeout(processNext, 2000);
-                }
-            }
-        };
-
-        if (selectedCampaign?.status === 'processing' && pollingActive) {
-            processNext();
+            }, 2000);
         }
 
         return () => {
-            active = false;
-            if (timeoutId) clearTimeout(timeoutId);
+            if (interval) clearInterval(interval);
         };
     }, [selectedCampaign?.status, pollingActive, selectedCampaign?.id]);
 

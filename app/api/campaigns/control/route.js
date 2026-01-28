@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import runner from '@/lib/campaign-runner';
 import { readData, writeData } from '@/lib/storage';
+import { headers } from 'next/headers';
 
 export async function POST(req) {
     try {
@@ -24,20 +24,38 @@ export async function POST(req) {
                 campaigns[index].rotateDomains = rotateDomains || false;
                 campaigns[index].rotateSenderName = rotateSenderName || false;
                 campaigns[index].domains = domains || [];
+                campaigns[index].currentIndex = 0;
+                campaigns[index].sentCount = 0;
+                campaigns[index].skippedCount = 0;
+                campaigns[index].failedCount = 0;
+                campaigns[index].logs = [];
             }
             await writeData('campaigns', campaigns);
-            // Note: runner.start not needed - frontend polls /api/campaigns/process
+
+            // Start the background worker
+            const headersList = headers();
+            const host = headersList.get('host') || 'localhost:3000';
+            const protocol = host.includes('localhost') ? 'http' : 'https';
+            const baseUrl = `${protocol}://${host}`;
+
+            // Fire and forget - worker will self-continue
+            fetch(`${baseUrl}/api/campaigns/worker`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaignId })
+            }).catch(() => {});
+
         } else if (action === 'PAUSE') {
             campaigns[index].status = 'paused';
             await writeData('campaigns', campaigns);
-            runner.pause(campaignId);
         } else if (action === 'RESET') {
             campaigns[index].status = 'draft';
             campaigns[index].currentIndex = 0;
             campaigns[index].sentCount = 0;
+            campaigns[index].skippedCount = 0;
+            campaigns[index].failedCount = 0;
             campaigns[index].logs = [];
             await writeData('campaigns', campaigns);
-            runner.pause(campaignId);
         }
 
         return NextResponse.json({ success: true, campaign: campaigns[index] });
