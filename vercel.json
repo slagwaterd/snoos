@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "app/api/campaigns/worker/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/campaigns/process/route.js": {
+      "maxDuration": 60
+    },
+    "app/api/send/route.js": {
+      "maxDuration": 30
+    },
+    "app/api/send/batch/route.js": {
+      "maxDuration": 60
+    }
+  }
+}
