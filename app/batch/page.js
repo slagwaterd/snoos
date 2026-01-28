@@ -41,6 +41,9 @@ function BatchContent() {
     const [previewSamples, setPreviewSamples] = useState([]);
     const [sending, setSending] = useState(false);
     const [pollingActive, setPollingActive] = useState(false);
+    const [domains, setDomains] = useState([]);
+    const [rotateDomains, setRotateDomains] = useState(false);
+    const [rotateSenderName, setRotateSenderName] = useState(false);
     const router = useRouter();
 
     // Generate AI variations
@@ -98,14 +101,16 @@ function BatchContent() {
     const hasVariationSyntax = template.content?.includes('{%') && template.content?.includes('%}');
 
     const fetchData = async () => {
-        const [contactsRes, campaignsRes, agentsRes] = await Promise.all([
+        const [contactsRes, campaignsRes, agentsRes, domainsRes] = await Promise.all([
             fetch('/api/contacts').then(r => r.json()),
             fetch('/api/campaigns').then(r => r.json()),
-            fetch('/api/agents').then(r => r.json())
+            fetch('/api/agents').then(r => r.json()),
+            fetch('/api/domains').then(r => r.json()).catch(() => ({ domains: [] }))
         ]);
         setContacts(contactsRes);
         setCampaigns(campaignsRes);
         setAgents(agentsRes);
+        setDomains(domainsRes.domains || []);
 
         // Update selected campaign if active
         if (selectedCampaign) {
@@ -146,7 +151,11 @@ function BatchContent() {
                 body: JSON.stringify({
                     campaignId: selectedCampaign.id,
                     action,
-                    template: (action === 'START' || action === 'RESUME') ? template : undefined
+                    template: (action === 'START' || action === 'RESUME') ? template : undefined,
+                    // Domain rotation settings
+                    rotateDomains: (action === 'START') ? rotateDomains : undefined,
+                    rotateSenderName: (action === 'START') ? rotateSenderName : undefined,
+                    domains: (action === 'START' && rotateDomains) ? domains.map(d => d.name) : undefined
                 })
             });
             const data = await res.json();
@@ -403,7 +412,7 @@ Ik wil je {%graag informeren over|vertellen over%} onze diensten.
 
                     <div style={{
                         padding: '1rem', borderRadius: '12px', background: 'var(--bg)', border: '1px solid var(--border)',
-                        marginBottom: '1.5rem'
+                        marginBottom: '1rem'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -422,6 +431,54 @@ Ik wil je {%graag informeren over|vertellen over%} onze diensten.
                                 : 'Automatically tailor the tone and content for each recipient.'}
                         </p>
                     </div>
+
+                    {/* Domain Rotation */}
+                    {domains.length > 1 && (
+                        <div style={{
+                            padding: '1rem', borderRadius: '12px', background: 'var(--bg)', border: '1px solid var(--border)',
+                            marginBottom: '1.5rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Shuffle size={16} color="var(--primary)" />
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Domain Rotation</span>
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    checked={rotateDomains}
+                                    onChange={(e) => setRotateDomains(e.target.checked)}
+                                />
+                            </div>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                Rotate between {domains.length} domains (info@each)
+                            </p>
+                            {rotateDomains && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.5rem' }}>
+                                    {domains.map(d => (
+                                        <span key={d.id} style={{
+                                            fontSize: '0.65rem',
+                                            padding: '0.15rem 0.4rem',
+                                            background: 'rgba(99, 102, 241, 0.1)',
+                                            borderRadius: '4px',
+                                            color: 'var(--primary)'
+                                        }}>
+                                            {d.name}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                            {rotateDomains && (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Vary sender name too</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={rotateSenderName}
+                                        onChange={(e) => setRotateSenderName(e.target.checked)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>

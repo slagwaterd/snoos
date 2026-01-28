@@ -4,7 +4,7 @@ import { readData, writeData } from '@/lib/storage';
 
 export async function POST(req) {
     try {
-        const { campaignId, action, template } = await req.json();
+        const { campaignId, action, template, rotateDomains, rotateSenderName, domains } = await req.json();
 
         const campaigns = await readData('campaigns');
         const index = campaigns.findIndex(c => c.id === campaignId);
@@ -17,6 +17,12 @@ export async function POST(req) {
             campaigns[index].status = 'processing';
             if (template) {
                 campaigns[index].template = template;
+            }
+            // Domain rotation settings (only on START)
+            if (action === 'START') {
+                campaigns[index].rotateDomains = rotateDomains || false;
+                campaigns[index].rotateSenderName = rotateSenderName || false;
+                campaigns[index].domains = domains || [];
             }
             await writeData('campaigns', campaigns);
             runner.start(campaignId);
