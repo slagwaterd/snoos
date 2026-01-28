@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { readData, writeData } from '@/lib/storage';
-import { headers } from 'next/headers';
 
 export async function POST(req) {
     try {
@@ -32,11 +31,10 @@ export async function POST(req) {
             }
             await writeData('campaigns', campaigns);
 
-            // Start the background worker
-            const headersList = headers();
-            const host = headersList.get('host') || 'localhost:3000';
-            const protocol = host.includes('localhost') ? 'http' : 'https';
-            const baseUrl = `${protocol}://${host}`;
+            // Start the background worker using VERCEL_URL or request URL
+            const baseUrl = process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
             // Fire and forget - worker will self-continue
             fetch(`${baseUrl}/api/campaigns/worker`, {
