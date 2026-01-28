@@ -140,21 +140,42 @@ function BatchContent() {
         fetchData();
     }, [campaignId]);
 
-    // Status polling - worker runs on server, we just fetch updates
+    // Active processing - browser drives the campaign
     useEffect(() => {
-        let interval;
+        let active = true;
+
+        const processNext = async () => {
+            if (!selectedCampaign?.id || selectedCampaign?.status !== 'processing') return;
+
+            try {
+                const res = await fetch('/api/campaigns/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ campaignId: selectedCampaign.id })
+                });
+                const data = await res.json();
+
+                // Refresh campaign data
+                await fetchData();
+
+                // Continue if still processing
+                if (active && data.status !== 'completed' && data.status !== 'paused') {
+                    // Small delay between emails
+                    setTimeout(processNext, 500);
+                }
+            } catch (err) {
+                console.error('Process error:', err);
+                // Retry after delay on error
+                if (active) setTimeout(processNext, 2000);
+            }
+        };
 
         if (selectedCampaign?.status === 'processing') {
-            // Poll for status updates every 2 seconds
-            interval = setInterval(async () => {
-                await fetchData();
-            }, 2000);
+            processNext();
         }
 
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [selectedCampaign?.status, pollingActive, selectedCampaign?.id]);
+        return () => { active = false; };
+    }, [selectedCampaign?.status, selectedCampaign?.id]);
 
     const handleControl = async (action) => {
         setSending(true);

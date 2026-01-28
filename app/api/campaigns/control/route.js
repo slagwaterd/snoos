@@ -30,18 +30,7 @@ export async function POST(req) {
                 campaigns[index].logs = [];
             }
             await writeData('campaigns', campaigns);
-
-            // Start the background worker using VERCEL_URL or request URL
-            const baseUrl = process.env.VERCEL_URL
-                ? `https://${process.env.VERCEL_URL}`
-                : process.env.NEXTAUTH_URL || 'http://localhost:3000';
-
-            // Fire and forget - worker will self-continue
-            fetch(`${baseUrl}/api/campaigns/worker`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ campaignId })
-            }).catch(() => {});
+            // Frontend will drive the processing via /api/campaigns/process
 
         } else if (action === 'PAUSE') {
             campaigns[index].status = 'paused';
