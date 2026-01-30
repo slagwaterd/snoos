@@ -18,7 +18,9 @@ import {
     Shuffle,
     Wand2,
     Eye,
-    RefreshCw
+    RefreshCw,
+    Type,
+    Code
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -46,6 +48,8 @@ function BatchContent() {
     const [rotateSenderName, setRotateSenderName] = useState(false);
     const [senderName, setSenderName] = useState('');
     const [defaultSenderName, setDefaultSenderName] = useState('');
+    const [varySubject, setVarySubject] = useState(false);
+    const [useHtml, setUseHtml] = useState(false);
     const router = useRouter();
 
     // Generate AI variations
@@ -192,7 +196,10 @@ function BatchContent() {
                     // Domain rotation settings
                     rotateDomains: (action === 'START') ? rotateDomains : undefined,
                     rotateSenderName: (action === 'START') ? rotateSenderName : undefined,
-                    domains: (action === 'START' && rotateDomains) ? domains.map(d => d.name) : undefined
+                    domains: (action === 'START' && rotateDomains) ? domains.map(d => d.name) : undefined,
+                    // AI subject variation and HTML mode
+                    varySubject: (action === 'START') ? varySubject : undefined,
+                    useHtml: (action === 'START') ? useHtml : undefined
                 })
             });
             const data = await res.json();
@@ -484,6 +491,48 @@ Ik wil je {%graag informeren over|vertellen over%} onze diensten.
                             {selectedAgent
                                 ? `Using agent "${selectedAgent.name}" for hyper-personalization.`
                                 : 'Automatically tailor the tone and content for each recipient.'}
+                        </p>
+                    </div>
+
+                    {/* AI Subject Variation */}
+                    <div style={{
+                        padding: '1rem', borderRadius: '12px', background: 'var(--bg)', border: '1px solid var(--border)',
+                        marginBottom: '1rem'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Type size={16} color="var(--primary)" />
+                                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>AI Subject Variatie</span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={varySubject}
+                                onChange={(e) => setVarySubject(e.target.checked)}
+                            />
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            AI varieert automatisch het onderwerp per ontvanger.
+                        </p>
+                    </div>
+
+                    {/* HTML Mode */}
+                    <div style={{
+                        padding: '1rem', borderRadius: '12px', background: 'var(--bg)', border: '1px solid var(--border)',
+                        marginBottom: '1rem'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Code size={16} color="var(--primary)" />
+                                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>HTML Mode</span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={useHtml}
+                                onChange={(e) => setUseHtml(e.target.checked)}
+                            />
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Interpreteer content als HTML (voor geavanceerde opmaak).
                         </p>
                     </div>
 

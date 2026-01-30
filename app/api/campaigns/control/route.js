@@ -3,7 +3,7 @@ import { readData, writeData } from '@/lib/storage';
 
 export async function POST(req) {
     try {
-        const { campaignId, action, template, senderName, rotateDomains, rotateSenderName, domains } = await req.json();
+        const { campaignId, action, template, senderName, rotateDomains, rotateSenderName, domains, varySubject, useHtml } = await req.json();
 
         const campaigns = await readData('campaigns');
         const index = campaigns.findIndex(c => c.id === campaignId);
@@ -23,6 +23,8 @@ export async function POST(req) {
                 campaigns[index].rotateDomains = rotateDomains || false;
                 campaigns[index].rotateSenderName = rotateSenderName || false;
                 campaigns[index].domains = domains || [];
+                campaigns[index].varySubject = varySubject || false;
+                campaigns[index].useHtml = useHtml || false;
                 campaigns[index].currentIndex = 0;
                 campaigns[index].sentCount = 0;
                 campaigns[index].skippedCount = 0;

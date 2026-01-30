@@ -143,6 +143,24 @@ export async function POST(req) {
             finalSubject = applyVariations(finalSubject);
             finalBody = applyVariations(finalBody);
 
+            // AI Subject Variation - vary subject per recipient
+            if (campaign.varySubject && finalSubject) {
+                try {
+                    const subjectPrompt = `Varieer dit email onderwerp subtiel, behoud dezelfde boodschap maar maak het uniek. Geef ALLEEN het nieuwe onderwerp terug, geen uitleg of aanhalingstekens.
+
+Origineel: ${finalSubject}
+Ontvanger: ${recipient.name || 'onbekend'}`;
+
+                    const aiRes = await Promise.race([
+                        smartAICall('quick_task', [{ role: 'user', content: subjectPrompt }], { temperature: 0.8 }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+                    ]);
+                    finalSubject = aiRes.content.trim().replace(/^["']|["']$/g, '');
+                } catch (e) {
+                    // Fallback: use original subject
+                }
+            }
+
             // Replace contact placeholders
             const replaceTags = (str) => {
                 return str
@@ -189,7 +207,9 @@ export async function POST(req) {
             const domainInfo = campaign.rotateDomains ? ` via ${activeDomain}` : '';
             await addLog('VERZENDEN', 'sending', `Verzenden${domainInfo}...`);
 
-            const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1a1a1a;">${finalBody.replace(/\n/g, '<br/>')}<br/><br/>${signature.replace(/\n/g, '<br/>')}</div>`;
+            // HTML mode: use content directly as HTML, otherwise convert newlines to <br/>
+            const bodyHtml = campaign.useHtml ? finalBody : finalBody.replace(/\n/g, '<br/>');
+            const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1a1a1a;">${bodyHtml}<br/><br/>${signature.replace(/\n/g, '<br/>')}</div>`;
             const fromAddress = `${activeSenderName} <${activeDomain}>`;
 
             let messageId;
