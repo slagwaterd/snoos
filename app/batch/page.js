@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
     Layers,
@@ -147,12 +147,16 @@ function BatchContent() {
     }, [campaignId]);
 
     // Active processing - browser drives the campaign
+    const processingRef = useRef(false);
+
     useEffect(() => {
         let active = true;
         let lastFetch = 0;
 
         const processNext = async () => {
             if (!active || !selectedCampaign?.id || selectedCampaign?.status !== 'processing') return;
+            if (processingRef.current) return; // Prevent double processing
+            processingRef.current = true;
 
             try {
                 if (turboMode) {
@@ -177,6 +181,7 @@ function BatchContent() {
                     }
 
                     // Continue if any succeeded and not completed - with small delay to prevent freeze
+                    processingRef.current = false;
                     if (active && results.some(r => r.status !== 'completed' && r.status !== 'paused')) {
                         setTimeout(processNext, 100); // Small delay to prevent UI freeze
                     } else {
@@ -193,11 +198,13 @@ function BatchContent() {
 
                     await fetchData();
 
+                    processingRef.current = false;
                     if (active && data.status !== 'completed' && data.status !== 'paused') {
                         setTimeout(processNext, 500);
                     }
                 }
             } catch (err) {
+                processingRef.current = false;
                 console.error('Process error:', err);
                 if (active) setTimeout(processNext, 1000);
             }
@@ -207,7 +214,10 @@ function BatchContent() {
             processNext();
         }
 
-        return () => { active = false; };
+        return () => {
+            active = false;
+            processingRef.current = false;
+        };
     }, [selectedCampaign?.status, selectedCampaign?.id, turboMode]);
 
     const handleControl = async (action) => {

@@ -111,9 +111,8 @@ export async function POST(req) {
         const companyCol = findColumn(['company', 'bedrijf', 'organisatie', 'organization', 'firma']);
         const titleCol = findColumn(['title', 'titel', 'functie', 'function', 'job']);
 
-        // Map rows to recipients
+        // Map rows to recipients (keep duplicates - user wants them)
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const seen = new Set();
 
         const recipients = rows.map(row => {
             // Normalize keys to lowercase for lookup
@@ -132,8 +131,6 @@ export async function POST(req) {
             if (!email || !emailRegex.test(email.trim())) return null;
 
             const cleanEmail = email.trim().toLowerCase();
-            if (seen.has(cleanEmail)) return null;
-            seen.add(cleanEmail);
 
             return {
                 email: cleanEmail,
