@@ -15,23 +15,52 @@ export async function POST(req) {
         if (file) {
             source = file.name;
             const buffer = Buffer.from(await file.arrayBuffer());
+            const isCSV = file.name.toLowerCase().endsWith('.csv');
 
-            // Try Excel/CSV first
-            try {
-                const workbook = XLSX.read(buffer, { type: 'buffer' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
+            // For CSV files, use manual parsing with delimiter detection
+            if (isCSV) {
+                const text = buffer.toString('utf-8');
+                const lines = text.split(/\r?\n/).filter(l => l.trim());
 
-                if (jsonData.length > 0) {
-                    structuredData = jsonData;
-                } else {
-                    // Fallback to raw text
-                    rawContent = XLSX.utils.sheet_to_csv(sheet);
+                if (lines.length > 0) {
+                    const firstLine = lines[0];
+                    // Detect delimiter: semicolon, tab, or comma
+                    const delimiter = firstLine.includes(';') ? ';'
+                        : firstLine.includes('\t') ? '\t' : ',';
+
+                    const headers = firstLine.split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, ''));
+                    const rows = lines.slice(1).map(line => {
+                        const values = line.split(delimiter);
+                        const obj = {};
+                        headers.forEach((h, i) => {
+                            obj[h] = values[i]?.trim().replace(/^["']|["']$/g, '') || '';
+                        });
+                        return obj;
+                    }).filter(row => Object.values(row).some(v => v)); // Filter empty rows
+
+                    if (rows.length > 0) {
+                        structuredData = rows;
+                    } else {
+                        rawContent = text;
+                    }
                 }
-            } catch (xlsxError) {
-                // Not Excel - read as raw text
-                rawContent = buffer.toString('utf-8');
+            } else {
+                // Try Excel first
+                try {
+                    const workbook = XLSX.read(buffer, { type: 'buffer' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                    if (jsonData.length > 0) {
+                        structuredData = jsonData;
+                    } else {
+                        rawContent = XLSX.utils.sheet_to_csv(sheet);
+                    }
+                } catch (xlsxError) {
+                    // Not Excel - read as raw text
+                    rawContent = buffer.toString('utf-8');
+                }
             }
         } else if (pastedData) {
             rawContent = pastedData;

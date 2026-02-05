@@ -142,6 +142,8 @@ function CampaignImporter({ agents, onClose }) {
     const [selectedAgent, setSelectedAgent] = useState(null);
     const [importResult, setImportResult] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [showPasteModal, setShowPasteModal] = useState(false);
+    const [pasteText, setPasteText] = useState('');
     const fileInputRef = useRef(null);
 
     const handleFileUpload = async (file) => {
@@ -301,14 +303,11 @@ function CampaignImporter({ agents, onClose }) {
                                         cursor: 'pointer',
                                         border: '2px dashed var(--border)'
                                     }}
-                                    onClick={() => {
-                                        const text = prompt('Plak je data hier (met headers):');
-                                        if (text) handlePaste(text);
-                                    }}
+                                    onClick={() => setShowPasteModal(true)}
                                 >
                                     <FileSpreadsheet size={32} color="var(--primary)" style={{ marginBottom: '0.5rem' }} />
                                     <p style={{ margin: 0, fontWeight: 600 }}>Paste Data</p>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Tab or comma separated</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Meerdere regels, tab of komma</p>
                                 </div>
                             </div>
 
@@ -316,6 +315,50 @@ function CampaignImporter({ agents, onClose }) {
                                 <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
                                     <Loader2 className="animate-spin" size={24} color="var(--primary)" />
                                     <p style={{ color: 'var(--text-muted)' }}>AI is mapping your columns...</p>
+                                </div>
+                            )}
+
+                            {/* Paste Modal */}
+                            {showPasteModal && (
+                                <div style={{
+                                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100
+                                }}>
+                                    <div className="card" style={{ width: '600px', padding: '1.5rem' }}>
+                                        <h3 style={{ marginBottom: '1rem' }}>Plak je data</h3>
+                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                                            Plak meerdere regels met emails. Formaat: naam, email, bedrijf (of alleen emails)
+                                        </p>
+                                        <textarea
+                                            className="textarea"
+                                            placeholder={`Voorbeeld:\nJan Jansen, jan@bedrijf.nl, Bedrijf BV\nPiet Pietersen, piet@example.com, Example Inc\n\nOf gewoon emails:\njan@bedrijf.nl\npiet@example.com`}
+                                            value={pasteText}
+                                            onChange={(e) => setPasteText(e.target.value)}
+                                            style={{ minHeight: '250px', fontFamily: 'monospace', fontSize: '0.85rem' }}
+                                            autoFocus
+                                        />
+                                        <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                                            <button
+                                                className="btn btn-outline"
+                                                style={{ flex: 1 }}
+                                                onClick={() => { setShowPasteModal(false); setPasteText(''); }}
+                                            >
+                                                Annuleren
+                                            </button>
+                                            <button
+                                                className="btn btn-primary"
+                                                style={{ flex: 1 }}
+                                                disabled={!pasteText.trim()}
+                                                onClick={() => {
+                                                    setShowPasteModal(false);
+                                                    handlePaste(pasteText);
+                                                    setPasteText('');
+                                                }}
+                                            >
+                                                Importeer
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
