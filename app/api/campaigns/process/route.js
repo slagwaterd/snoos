@@ -11,14 +11,15 @@ export async function POST(req) {
     try {
         const { campaignId, turbo } = await req.json();
 
-        const campaigns = await readData('campaigns');
-        const index = campaigns.findIndex(c => c.id === campaignId);
+        // ATOMIC: Read, increment, write immediately to prevent race conditions
+        let campaigns = await readData('campaigns');
+        let index = campaigns.findIndex(c => c.id === campaignId);
 
         if (index === -1) {
             return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
         }
 
-        const campaign = campaigns[index];
+        let campaign = campaigns[index];
 
         // Check if campaign should be processing
         if (campaign.status !== 'processing') {
@@ -45,6 +46,10 @@ export async function POST(req) {
                 total: recipients.length
             });
         }
+
+        // ATOMIC INCREMENT: Claim this index immediately before processing
+        campaigns[index].currentIndex = currentIndex + 1;
+        await writeData('campaigns', campaigns);
 
         const recipient = recipients[currentIndex];
         const settings = await readData('settings');
@@ -102,9 +107,13 @@ export async function POST(req) {
 
                 if (badWords.some(word => localParts.includes(word))) {
                     await addLog('SKIP', 'blocked', `Generiek adres overgeslagen`);
-                    campaigns[index].currentIndex = currentIndex + 1;
-                    campaigns[index].skippedCount = (campaigns[index].skippedCount || 0) + 1;
-                    await writeData('campaigns', campaigns);
+                    // Update skipped count
+                    const list = await readData('campaigns');
+                    const idx = list.findIndex(c => c.id === campaignId);
+                    if (idx !== -1) {
+                        list[idx].skippedCount = (list[idx].skippedCount || 0) + 1;
+                        await writeData('campaigns', list);
+                    }
 
                     return NextResponse.json({
                         success: true,
@@ -125,9 +134,13 @@ export async function POST(req) {
                 } catch (e) {
                     if (e.code === 'ENOTFOUND' || e.code === 'ENODATA') {
                         await addLog('SKIP', 'blocked', `Geen mailserver voor ${domain}`);
-                        campaigns[index].currentIndex = currentIndex + 1;
-                        campaigns[index].skippedCount = (campaigns[index].skippedCount || 0) + 1;
-                        await writeData('campaigns', campaigns);
+                        // Update skipped count
+                        const list = await readData('campaigns');
+                        const idx = list.findIndex(c => c.id === campaignId);
+                        if (idx !== -1) {
+                            list[idx].skippedCount = (list[idx].skippedCount || 0) + 1;
+                            await writeData('campaigns', list);
+                        }
 
                         return NextResponse.json({
                             success: true,
@@ -239,11 +252,10 @@ Ontvanger: ${recipient.name || 'onbekend'}`;
 
             await addLog('VOLTOOID', 'success', `✅ Verzonden naar ${recipient.email}`);
 
-            // Update campaign state
+            // Update sent count
             const finalList = await readData('campaigns');
             const finalIdx = finalList.findIndex(c => c.id === campaignId);
             if (finalIdx !== -1) {
-                finalList[finalIdx].currentIndex = currentIndex + 1;
                 finalList[finalIdx].sentCount = (finalList[finalIdx].sentCount || 0) + 1;
                 finalList[finalIdx].updatedAt = new Date().toISOString();
                 await writeData('campaigns', finalList);
@@ -272,10 +284,13 @@ Ontvanger: ${recipient.name || 'onbekend'}`;
         } catch (err) {
             await addLog('FOUT', 'failed', `Error: ${err.message}`);
 
-            // Increment index to skip this recipient
-            campaigns[index].currentIndex = currentIndex + 1;
-            campaigns[index].failedCount = (campaigns[index].failedCount || 0) + 1;
-            await writeData('campaigns', campaigns);
+            // Update failed count
+            const list = await readData('campaigns');
+            const idx = list.findIndex(c => c.id === campaignId);
+            if (idx !== -1) {
+                list[idx].failedCount = (list[idx].failedCount || 0) + 1;
+                await writeData('campaigns', list);
+            }
 
             return NextResponse.json({
                 success: true,
