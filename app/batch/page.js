@@ -20,7 +20,8 @@ import {
     Eye,
     RefreshCw,
     Type,
-    Code
+    Code,
+    Zap
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -50,6 +51,7 @@ function BatchContent() {
     const [defaultSenderName, setDefaultSenderName] = useState('');
     const [varySubject, setVarySubject] = useState(false);
     const [useHtml, setUseHtml] = useState(false);
+    const [turboMode, setTurboMode] = useState(false);
     const router = useRouter();
 
     // Generate AI variations
@@ -147,30 +149,57 @@ function BatchContent() {
     // Active processing - browser drives the campaign
     useEffect(() => {
         let active = true;
+        let lastFetch = 0;
 
         const processNext = async () => {
             if (!selectedCampaign?.id || selectedCampaign?.status !== 'processing') return;
 
             try {
-                const res = await fetch('/api/campaigns/process', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ campaignId: selectedCampaign.id })
-                });
-                const data = await res.json();
+                if (turboMode) {
+                    // TURBO MODE: 10 parallel requests, no delay
+                    const batchSize = 10;
+                    const promises = [];
+                    for (let i = 0; i < batchSize; i++) {
+                        promises.push(
+                            fetch('/api/campaigns/process', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ campaignId: selectedCampaign.id, turbo: true })
+                            }).then(r => r.json()).catch(() => ({ status: 'error' }))
+                        );
+                    }
+                    const results = await Promise.all(promises);
 
-                // Refresh campaign data
-                await fetchData();
+                    // Refresh UI every 500ms max
+                    if (Date.now() - lastFetch > 500) {
+                        await fetchData();
+                        lastFetch = Date.now();
+                    }
 
-                // Continue if still processing
-                if (active && data.status !== 'completed' && data.status !== 'paused') {
-                    // Small delay between emails
-                    setTimeout(processNext, 500);
+                    // Continue if any succeeded and not completed
+                    if (active && results.some(r => r.status !== 'completed' && r.status !== 'paused')) {
+                        processNext(); // No delay in turbo mode
+                    } else {
+                        await fetchData();
+                    }
+                } else {
+                    // NORMAL MODE: 1 at a time with delay
+                    const res = await fetch('/api/campaigns/process', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ campaignId: selectedCampaign.id })
+                    });
+                    const data = await res.json();
+
+                    await fetchData();
+
+                    if (active && data.status !== 'completed' && data.status !== 'paused') {
+                        setTimeout(processNext, 500);
+                    }
                 }
             } catch (err) {
                 console.error('Process error:', err);
-                // Retry after delay on error
-                if (active) setTimeout(processNext, 2000);
+                if (active) setTimeout(processNext, 1000);
             }
         };
 
@@ -179,7 +208,7 @@ function BatchContent() {
         }
 
         return () => { active = false; };
-    }, [selectedCampaign?.status, selectedCampaign?.id]);
+    }, [selectedCampaign?.status, selectedCampaign?.id, turboMode]);
 
     const handleControl = async (action) => {
         setSending(true);
@@ -199,7 +228,8 @@ function BatchContent() {
                     domains: (action === 'START' && rotateDomains) ? domains.map(d => d.name) : undefined,
                     // AI subject variation and HTML mode
                     varySubject: (action === 'START') ? varySubject : undefined,
-                    useHtml: (action === 'START') ? useHtml : undefined
+                    useHtml: (action === 'START') ? useHtml : undefined,
+                    turboMode: (action === 'START') ? turboMode : undefined
                 })
             });
             const data = await res.json();
@@ -533,6 +563,28 @@ Ik wil je {%graag informeren over|vertellen over%} onze diensten.
                         </div>
                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                             Interpreteer content als HTML (voor geavanceerde opmaak).
+                        </p>
+                    </div>
+
+                    {/* Turbo Mode */}
+                    <div style={{
+                        padding: '1rem', borderRadius: '12px', background: turboMode ? 'rgba(234, 179, 8, 0.1)' : 'var(--bg)',
+                        border: turboMode ? '1px solid rgba(234, 179, 8, 0.3)' : '1px solid var(--border)',
+                        marginBottom: '1rem'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Zap size={16} color={turboMode ? '#eab308' : 'var(--primary)'} />
+                                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Turbo Mode</span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={turboMode}
+                                onChange={(e) => setTurboMode(e.target.checked)}
+                            />
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            10x parallel, geen checks. ~50k emails/uur.
                         </p>
                     </div>
 

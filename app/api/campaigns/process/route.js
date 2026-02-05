@@ -9,7 +9,7 @@ import dns from 'dns/promises';
 // Process ONE recipient per call (serverless-friendly)
 export async function POST(req) {
     try {
-        const { campaignId } = await req.json();
+        const { campaignId, turbo } = await req.json();
 
         const campaigns = await readData('campaigns');
         const index = campaigns.findIndex(c => c.id === campaignId);
@@ -53,8 +53,10 @@ export async function POST(req) {
         const signature = settings?.signature || '';
         const emailProvider = settings?.emailProvider || 'server';
 
-        // Helper to add log
+        // Helper to add log (skip in turbo mode)
+        const isTurbo = turbo || campaign.turboMode;
         const addLog = async (step, status, message) => {
+            if (isTurbo) return; // Skip logging in turbo mode for speed
             const list = await readData('campaigns');
             const idx = list.findIndex(c => c.id === campaignId);
             if (idx !== -1) {
@@ -91,37 +93,15 @@ export async function POST(req) {
 
             await addLog('VOORBEREIDEN', 'processing', `Verwerken ${recipient.name || recipient.email}...`);
 
-            // Quick validation
-            const emailLocal = recipient.email.split('@')[0].toLowerCase();
-            const badWords = ['info', 'contact', 'sales', 'marketing', 'reservations', 'booking', 'frontdesk', 'general'];
-            const localParts = emailLocal.split(/[\.\-\_]/);
+            // Skip validations in turbo mode for speed
+            if (!isTurbo) {
+                // Quick validation
+                const emailLocal = recipient.email.split('@')[0].toLowerCase();
+                const badWords = ['info', 'contact', 'sales', 'marketing', 'reservations', 'booking', 'frontdesk', 'general'];
+                const localParts = emailLocal.split(/[\.\-\_]/);
 
-            if (badWords.some(word => localParts.includes(word))) {
-                await addLog('SKIP', 'blocked', `Generiek adres overgeslagen`);
-                // Increment index and continue
-                campaigns[index].currentIndex = currentIndex + 1;
-                campaigns[index].skippedCount = (campaigns[index].skippedCount || 0) + 1;
-                await writeData('campaigns', campaigns);
-
-                return NextResponse.json({
-                    success: true,
-                    status: 'skipped',
-                    currentIndex: currentIndex + 1,
-                    total: recipients.length
-                });
-            }
-
-            // DNS Check (quick)
-            const domain = recipient.email.split('@')[1];
-            try {
-                const mx = await Promise.race([
-                    dns.resolveMx(domain),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-                ]);
-                if (!mx || mx.length === 0) throw new Error('No MX');
-            } catch (e) {
-                if (e.code === 'ENOTFOUND' || e.code === 'ENODATA') {
-                    await addLog('SKIP', 'blocked', `Geen mailserver voor ${domain}`);
+                if (badWords.some(word => localParts.includes(word))) {
+                    await addLog('SKIP', 'blocked', `Generiek adres overgeslagen`);
                     campaigns[index].currentIndex = currentIndex + 1;
                     campaigns[index].skippedCount = (campaigns[index].skippedCount || 0) + 1;
                     await writeData('campaigns', campaigns);
@@ -132,6 +112,30 @@ export async function POST(req) {
                         currentIndex: currentIndex + 1,
                         total: recipients.length
                     });
+                }
+
+                // DNS Check (quick)
+                const domain = recipient.email.split('@')[1];
+                try {
+                    const mx = await Promise.race([
+                        dns.resolveMx(domain),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+                    ]);
+                    if (!mx || mx.length === 0) throw new Error('No MX');
+                } catch (e) {
+                    if (e.code === 'ENOTFOUND' || e.code === 'ENODATA') {
+                        await addLog('SKIP', 'blocked', `Geen mailserver voor ${domain}`);
+                        campaigns[index].currentIndex = currentIndex + 1;
+                        campaigns[index].skippedCount = (campaigns[index].skippedCount || 0) + 1;
+                        await writeData('campaigns', campaigns);
+
+                        return NextResponse.json({
+                            success: true,
+                            status: 'skipped',
+                            currentIndex: currentIndex + 1,
+                            total: recipients.length
+                        });
+                    }
                 }
             }
 
