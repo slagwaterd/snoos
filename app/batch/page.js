@@ -134,6 +134,16 @@ function BatchContent() {
             if (campaign) {
                 setSelectedCampaign(campaign);
                 setSelectedIds(campaign.recipients?.map((_, i) => i) || []);
+                // Load template from campaign if it exists
+                if (campaign.template) {
+                    setTemplate(campaign.template);
+                }
+                // Load other campaign settings
+                if (campaign.useHtml) setUseHtml(true);
+                if (campaign.varySubject) setVarySubject(true);
+                if (campaign.turboMode) setTurboMode(true);
+                if (campaign.rotateDomains) setRotateDomains(true);
+                if (campaign.senderName) setSenderName(campaign.senderName);
                 if (campaign.agentId) {
                     const agent = agentsRes.find(a => a.id === campaign.agentId);
                     setSelectedAgent(agent);
@@ -300,6 +310,16 @@ function BatchContent() {
                                 onClick={() => {
                                     setSelectedCampaign(c);
                                     setSelectedIds(c.recipients?.map((_, i) => i) || []);
+                                    // Load template from campaign
+                                    if (c.template) {
+                                        setTemplate(c.template);
+                                    }
+                                    // Load campaign settings
+                                    if (c.useHtml) setUseHtml(true);
+                                    if (c.varySubject) setVarySubject(true);
+                                    if (c.turboMode) setTurboMode(true);
+                                    if (c.rotateDomains) setRotateDomains(true);
+                                    if (c.senderName) setSenderName(c.senderName);
                                     if (c.agentId) {
                                         const agent = agents.find(a => a.id === c.agentId);
                                         setSelectedAgent(agent);
