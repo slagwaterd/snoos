@@ -3,11 +3,28 @@ import { getResend } from '@/lib/resend';
 
 export async function GET() {
     try {
+        // Check if RESEND_API_KEY is configured
+        if (!process.env.RESEND_API_KEY) {
+            console.error('RESEND_API_KEY not configured');
+            return NextResponse.json({
+                success: true,
+                domains: [],
+                count: 0,
+                warning: 'RESEND_API_KEY not configured'
+            });
+        }
+
         const resend = getResend();
         const { data, error } = await resend.domains.list();
 
         if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
+            console.error('Resend domains error:', error);
+            return NextResponse.json({
+                success: true,
+                domains: [],
+                count: 0,
+                error: error.message
+            });
         }
 
         // Filter only verified domains
@@ -26,6 +43,12 @@ export async function GET() {
             count: verifiedDomains.length
         });
     } catch (error) {
-        return NextResponse.json({ error: 'Failed to fetch domains' }, { status: 500 });
+        console.error('Domains API error:', error.message);
+        return NextResponse.json({
+            success: true,
+            domains: [],
+            count: 0,
+            error: error.message
+        });
     }
 }
