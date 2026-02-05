@@ -81,15 +81,13 @@ export async function POST(req) {
             let activeDomain = defaultSender;
             let activeSenderName = baseSenderName;
 
+            // Apply variations to sender name (supports {%opt1|opt2|opt3%} syntax)
+            activeSenderName = applyVariations(activeSenderName);
+
             if (campaign.rotateDomains && campaign.domains?.length > 0) {
                 const domainIndex = currentIndex % campaign.domains.length;
                 const selectedDomain = campaign.domains[domainIndex];
                 activeDomain = `info@${selectedDomain}`;
-
-                if (campaign.rotateSenderName) {
-                    const nameVariations = [baseSenderName, baseSenderName.split(' ')[0], `Team ${baseSenderName}`];
-                    activeSenderName = nameVariations[domainIndex % nameVariations.length];
-                }
             }
 
             if (!activeDomain) {
