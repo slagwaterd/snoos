@@ -170,24 +170,24 @@ function BatchContent() {
 
             try {
                 if (turboMode) {
-                    // TURBO MODE: 1 request at a time, 500ms delay (2/sec max)
-                    const res = await fetch('/api/campaigns/process', {
+                    // TURBO MODE: Use multi-key parallel endpoint (15 emails at once!)
+                    const res = await fetch('/api/campaigns/turbo', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ campaignId: selectedCampaign.id, turbo: true })
+                        body: JSON.stringify({ campaignId: selectedCampaign.id })
                     });
                     const data = await res.json();
 
-                    // Refresh UI every 5s (less overhead)
-                    if (Date.now() - lastFetch > 5000) {
+                    // Refresh UI every 3s
+                    if (Date.now() - lastFetch > 3000) {
                         await fetchData();
                         lastFetch = Date.now();
                     }
 
-                    // Continue after 500ms (2/sec rate limit)
+                    // Continue immediately - each batch takes ~1 sec
                     processingRef.current = false;
                     if (active && data.status !== 'completed' && data.status !== 'paused') {
-                        setTimeout(processNext, 500);
+                        setTimeout(processNext, 100); // Fast! 15 emails per batch
                     } else {
                         await fetchData();
                     }
