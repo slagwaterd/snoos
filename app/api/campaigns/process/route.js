@@ -58,10 +58,12 @@ export async function POST(req) {
         const signature = settings?.signature || '';
         const emailProvider = settings?.emailProvider || 'server';
 
-        // Helper to add log (skip in turbo mode)
+        // Helper to add log (minimal in turbo mode)
         const isTurbo = turbo || campaign.turboMode;
         const addLog = async (step, status, message) => {
-            if (isTurbo) return; // Skip logging in turbo mode for speed
+            // In turbo mode, only log success/fail (not processing steps)
+            if (isTurbo && status !== 'success' && status !== 'failed') return;
+
             const list = await readData('campaigns');
             const idx = list.findIndex(c => c.id === campaignId);
             if (idx !== -1) {
@@ -71,7 +73,9 @@ export async function POST(req) {
                     recipient: recipient.email,
                     step, status, message
                 });
-                if (list[idx].logs.length > 50) list[idx].logs = list[idx].logs.slice(0, 50);
+                // Keep only last 10 in turbo mode, 50 in normal mode
+                const maxLogs = isTurbo ? 10 : 50;
+                if (list[idx].logs.length > maxLogs) list[idx].logs = list[idx].logs.slice(0, maxLogs);
                 await writeData('campaigns', list);
             }
         };
