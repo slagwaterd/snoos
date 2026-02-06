@@ -170,8 +170,9 @@ function BatchContent() {
 
             try {
                 if (turboMode) {
-                    // TURBO MODE: 10 parallel requests, minimal delay
-                    const batchSize = 10;
+                    // TURBO MODE: 2 requests per second (Resend rate limit)
+                    // Send 2 emails, then wait 1 second
+                    const batchSize = 2;
                     const promises = [];
                     for (let i = 0; i < batchSize; i++) {
                         promises.push(
@@ -184,16 +185,16 @@ function BatchContent() {
                     }
                     const results = await Promise.all(promises);
 
-                    // Refresh UI every 2s max (less frequent = faster)
-                    if (Date.now() - lastFetch > 2000) {
+                    // Refresh UI every 5s (less overhead)
+                    if (Date.now() - lastFetch > 5000) {
                         await fetchData();
                         lastFetch = Date.now();
                     }
 
-                    // Continue immediately if not done
+                    // Continue after 1 second (respect rate limit)
                     processingRef.current = false;
                     if (active && results.some(r => r.status !== 'completed' && r.status !== 'paused')) {
-                        setTimeout(processNext, 10); // Minimal delay
+                        setTimeout(processNext, 1000); // 1 second = 2/sec rate limit
                     } else {
                         await fetchData();
                     }
