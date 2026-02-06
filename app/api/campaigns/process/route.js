@@ -11,7 +11,7 @@ export async function POST(req) {
     try {
         const { campaignId, turbo } = await req.json();
 
-        // ATOMIC: Read, increment, write immediately to prevent race conditions
+        // Read campaign data ONCE
         let campaigns = await readData('campaigns');
         let index = campaigns.findIndex(c => c.id === campaignId);
 
@@ -20,6 +20,7 @@ export async function POST(req) {
         }
 
         let campaign = campaigns[index];
+        const isTurbo = turbo || campaign.turboMode;
 
         // Check if campaign should be processing
         if (campaign.status !== 'processing') {
@@ -47,45 +48,45 @@ export async function POST(req) {
             });
         }
 
-        // ATOMIC INCREMENT: Claim this index immediately before processing
+        // ATOMIC INCREMENT + SENT COUNT in one write
         campaigns[index].currentIndex = currentIndex + 1;
-        await writeData('campaigns', campaigns);
 
         const recipient = recipients[currentIndex];
-        const settings = await readData('settings');
-        const baseSenderName = campaign.senderName || settings?.senderName || 'IronMail';
-        const defaultSender = settings?.defaultSender;
-        const signature = settings?.signature || '';
-        const emailProvider = settings?.emailProvider || 'server';
 
-        // Helper to add log (minimal in turbo mode)
-        const isTurbo = turbo || campaign.turboMode;
-        const addLog = async (step, status, message) => {
-            // In turbo mode, only log success/fail (not processing steps)
-            if (isTurbo && status !== 'success' && status !== 'failed') return;
+        // In turbo mode, read settings from campaign cache or use defaults
+        let baseSenderName, defaultSender, signature, emailProvider;
 
-            const list = await readData('campaigns');
-            const idx = list.findIndex(c => c.id === campaignId);
-            if (idx !== -1) {
-                if (!list[idx].logs) list[idx].logs = [];
-                list[idx].logs.unshift({
-                    timestamp: new Date().toISOString(),
-                    recipient: recipient.email,
-                    step, status, message
-                });
-                // Keep only last 10 in turbo mode, 50 in normal mode
-                const maxLogs = isTurbo ? 10 : 50;
-                if (list[idx].logs.length > maxLogs) list[idx].logs = list[idx].logs.slice(0, maxLogs);
-                await writeData('campaigns', list);
+        if (isTurbo && campaign._cachedSettings) {
+            // Use cached settings
+            baseSenderName = campaign.senderName || campaign._cachedSettings.senderName || 'IronMail';
+            defaultSender = campaign._cachedSettings.defaultSender;
+            signature = campaign._cachedSettings.signature || '';
+            emailProvider = campaign._cachedSettings.emailProvider || 'server';
+        } else {
+            // Read settings and cache them
+            const settings = await readData('settings');
+            baseSenderName = campaign.senderName || settings?.senderName || 'IronMail';
+            defaultSender = settings?.defaultSender;
+            signature = settings?.signature || '';
+            emailProvider = settings?.emailProvider || 'server';
+
+            // Cache settings in campaign for turbo mode
+            if (isTurbo) {
+                campaigns[index]._cachedSettings = {
+                    senderName: settings?.senderName,
+                    defaultSender: settings?.defaultSender,
+                    signature: settings?.signature,
+                    emailProvider: settings?.emailProvider
+                };
             }
-        };
+        }
 
         try {
             // Domain Rotation Logic
             let activeDomain = defaultSender;
             let activeSenderName = baseSenderName;
 
-            // Apply variations to sender name (supports {%opt1|opt2|opt3%} syntax)
+            // Apply variations to sender name
             activeSenderName = applyVariations(activeSenderName);
 
             if (campaign.rotateDomains && campaign.domains?.length > 0) {
@@ -98,9 +99,7 @@ export async function POST(req) {
                 throw new Error('No sender configured');
             }
 
-            await addLog('VOORBEREIDEN', 'processing', `Verwerken ${recipient.name || recipient.email}...`);
-
-            // Skip validations in turbo mode for speed
+            // Skip ALL validations in turbo mode
             if (!isTurbo) {
                 // Quick validation
                 const emailLocal = recipient.email.split('@')[0].toLowerCase();
@@ -108,15 +107,8 @@ export async function POST(req) {
                 const localParts = emailLocal.split(/[\.\-\_]/);
 
                 if (badWords.some(word => localParts.includes(word))) {
-                    await addLog('SKIP', 'blocked', `Generiek adres overgeslagen`);
-                    // Update skipped count
-                    const list = await readData('campaigns');
-                    const idx = list.findIndex(c => c.id === campaignId);
-                    if (idx !== -1) {
-                        list[idx].skippedCount = (list[idx].skippedCount || 0) + 1;
-                        await writeData('campaigns', list);
-                    }
-
+                    campaigns[index].skippedCount = (campaigns[index].skippedCount || 0) + 1;
+                    await writeData('campaigns', campaigns);
                     return NextResponse.json({
                         success: true,
                         status: 'skipped',
@@ -125,7 +117,7 @@ export async function POST(req) {
                     });
                 }
 
-                // DNS Check (quick)
+                // DNS Check
                 const domain = recipient.email.split('@')[1];
                 try {
                     const mx = await Promise.race([
@@ -135,15 +127,8 @@ export async function POST(req) {
                     if (!mx || mx.length === 0) throw new Error('No MX');
                 } catch (e) {
                     if (e.code === 'ENOTFOUND' || e.code === 'ENODATA') {
-                        await addLog('SKIP', 'blocked', `Geen mailserver voor ${domain}`);
-                        // Update skipped count
-                        const list = await readData('campaigns');
-                        const idx = list.findIndex(c => c.id === campaignId);
-                        if (idx !== -1) {
-                            list[idx].skippedCount = (list[idx].skippedCount || 0) + 1;
-                            await writeData('campaigns', list);
-                        }
-
+                        campaigns[index].skippedCount = (campaigns[index].skippedCount || 0) + 1;
+                        await writeData('campaigns', campaigns);
                         return NextResponse.json({
                             success: true,
                             status: 'skipped',
@@ -162,21 +147,43 @@ export async function POST(req) {
             finalSubject = applyVariations(finalSubject);
             finalBody = applyVariations(finalBody);
 
-            // AI Subject Variation - vary subject per recipient
-            if (campaign.varySubject && finalSubject) {
-                try {
-                    const subjectPrompt = `Varieer dit email onderwerp subtiel, behoud dezelfde boodschap maar maak het uniek. Geef ALLEEN het nieuwe onderwerp terug, geen uitleg of aanhalingstekens.
+            // Skip AI in turbo mode
+            if (!isTurbo) {
+                // AI Subject Variation
+                if (campaign.varySubject && finalSubject) {
+                    try {
+                        const subjectPrompt = `Varieer dit email onderwerp subtiel. Geef ALLEEN het nieuwe onderwerp terug.\n\nOrigineel: ${finalSubject}`;
+                        const aiRes = await Promise.race([
+                            smartAICall('quick_task', [{ role: 'user', content: subjectPrompt }], { temperature: 0.8 }),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
+                        ]);
+                        finalSubject = aiRes.content.trim().replace(/^["']|["']$/g, '');
+                    } catch (e) {}
+                }
 
-Origineel: ${finalSubject}
-Ontvanger: ${recipient.name || 'onbekend'}`;
+                // AI Personalization if agent is set
+                if (campaign.agentId) {
+                    const agents = await readData('agents');
+                    const agent = agents.find(a => a.id === campaign.agentId);
+                    if (agent) {
+                        let lang = 'English';
+                        const emD = recipient.email.toLowerCase();
+                        if (emD.endsWith('.nl')) lang = 'Dutch';
+                        else if (emD.endsWith('.de') || emD.endsWith('.at')) lang = 'German';
+                        else if (emD.endsWith('.fr') || emD.endsWith('.be')) lang = 'French';
 
-                    const aiRes = await Promise.race([
-                        smartAICall('quick_task', [{ role: 'user', content: subjectPrompt }], { temperature: 0.8 }),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
-                    ]);
-                    finalSubject = aiRes.content.trim().replace(/^["']|["']$/g, '');
-                } catch (e) {
-                    // Fallback: use original subject
+                        const prompt = `### PERSONA\n${agent.definition}\n### RECIPIENT\n- Name: ${recipient.name}\n- Company: ${recipient.company}\n### LANGUAGE: ${lang}\n### RULES\n- Subject: Short, intriguing\n- Body: 3 paragraphs, ends on question. No signature.\nRespond JSON: { "subject": "...", "content": "..." }`;
+
+                        try {
+                            const aiRes = await Promise.race([
+                                smartAICall('research_synthesis', [{ role: 'user', content: prompt }], { jsonMode: true }),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 30000))
+                            ]);
+                            const pData = JSON.parse(aiRes.content);
+                            finalSubject = pData.subject;
+                            finalBody = pData.content;
+                        } catch (e) {}
+                    }
                 }
             }
 
@@ -191,42 +198,7 @@ Ontvanger: ${recipient.name || 'onbekend'}`;
             finalSubject = replaceTags(finalSubject);
             finalBody = replaceTags(finalBody);
 
-            // AI Personalization if agent is set
-            if (campaign.agentId) {
-                const agents = await readData('agents');
-                const agent = agents.find(a => a.id === campaign.agentId);
-
-                if (agent) {
-                    await addLog('AI_OPSTELLEN', 'generating', `AI genereert persoonlijke mail...`);
-
-                    // Detect language
-                    let lang = 'English';
-                    const emD = recipient.email.toLowerCase();
-                    if (emD.endsWith('.nl')) lang = 'Dutch';
-                    else if (emD.endsWith('.de') || emD.endsWith('.at')) lang = 'German';
-                    else if (emD.endsWith('.fr') || emD.endsWith('.be')) lang = 'French';
-
-                    const prompt = `### PERSONA\n${agent.definition}\n### RECIPIENT\n- Name: ${recipient.name}\n- Company: ${recipient.company}\n### LANGUAGE: ${lang}\n### RULES\n- Subject: Short, intriguing\n- Body: 3 paragraphs, ends on question. No signature.\nRespond JSON: { "subject": "...", "content": "..." }`;
-
-                    try {
-                        const aiRes = await Promise.race([
-                            smartAICall('research_synthesis', [{ role: 'user', content: prompt }], { jsonMode: true }),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 30000))
-                        ]);
-                        const pData = JSON.parse(aiRes.content);
-                        finalSubject = pData.subject;
-                        finalBody = pData.content;
-                    } catch (e) {
-                        await addLog('WAARSCHUWING', 'warning', `AI fallback: ${e.message}`);
-                    }
-                }
-            }
-
             // Send email
-            const domainInfo = campaign.rotateDomains ? ` via ${activeDomain}` : '';
-            await addLog('VERZENDEN', 'sending', `Verzenden${domainInfo}...`);
-
-            // HTML mode: use content directly as HTML, otherwise convert newlines to <br/>
             const bodyHtml = campaign.useHtml ? finalBody : finalBody.replace(/\n/g, '<br/>');
             const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1a1a1a;">${bodyHtml}<br/><br/>${signature.replace(/\n/g, '<br/>')}</div>`;
             const fromAddress = `${activeSenderName} <${activeDomain}>`;
@@ -252,47 +224,68 @@ Ontvanger: ${recipient.name || 'onbekend'}`;
                 messageId = data.id;
             }
 
-            await addLog('VOLTOOID', 'success', `✅ Verzonden naar ${recipient.email}`);
+            // Update sent count and save ONCE
+            campaigns[index].sentCount = (campaigns[index].sentCount || 0) + 1;
+            campaigns[index].updatedAt = new Date().toISOString();
 
-            // Update sent count
-            const finalList = await readData('campaigns');
-            const finalIdx = finalList.findIndex(c => c.id === campaignId);
-            if (finalIdx !== -1) {
-                finalList[finalIdx].sentCount = (finalList[finalIdx].sentCount || 0) + 1;
-                finalList[finalIdx].updatedAt = new Date().toISOString();
-                await writeData('campaigns', finalList);
+            // Add minimal log in turbo mode (only last 5)
+            if (isTurbo) {
+                if (!campaigns[index].logs) campaigns[index].logs = [];
+                campaigns[index].logs.unshift({
+                    timestamp: new Date().toISOString(),
+                    recipient: recipient.email,
+                    step: 'SENT',
+                    status: 'success',
+                    message: `✅ ${recipient.email}`
+                });
+                if (campaigns[index].logs.length > 5) {
+                    campaigns[index].logs = campaigns[index].logs.slice(0, 5);
+                }
             }
 
-            // Log to sent
-            await appendData('sent', {
-                messageId,
-                provider: emailProvider,
-                from: activeDomain,
-                to: recipient.email,
-                subject: finalSubject,
-                status: 'sent',
-                campaignId
-            });
+            // ONE database write for everything
+            await writeData('campaigns', campaigns);
+
+            // Skip sent log in turbo mode
+            if (!isTurbo) {
+                await appendData('sent', {
+                    messageId,
+                    provider: emailProvider,
+                    from: activeDomain,
+                    to: recipient.email,
+                    subject: finalSubject,
+                    status: 'sent',
+                    campaignId
+                });
+            }
 
             return NextResponse.json({
                 success: true,
                 status: 'sent',
                 recipient: recipient.email,
                 currentIndex: currentIndex + 1,
-                sentCount: (campaign.sentCount || 0) + 1,
+                sentCount: campaigns[index].sentCount,
                 total: recipients.length
             });
 
         } catch (err) {
-            await addLog('FOUT', 'failed', `Error: ${err.message}`);
-
             // Update failed count
-            const list = await readData('campaigns');
-            const idx = list.findIndex(c => c.id === campaignId);
-            if (idx !== -1) {
-                list[idx].failedCount = (list[idx].failedCount || 0) + 1;
-                await writeData('campaigns', list);
+            campaigns[index].failedCount = (campaigns[index].failedCount || 0) + 1;
+
+            // Add error log
+            if (!campaigns[index].logs) campaigns[index].logs = [];
+            campaigns[index].logs.unshift({
+                timestamp: new Date().toISOString(),
+                recipient: recipient.email,
+                step: 'ERROR',
+                status: 'failed',
+                message: `❌ ${err.message}`
+            });
+            if (campaigns[index].logs.length > 10) {
+                campaigns[index].logs = campaigns[index].logs.slice(0, 10);
             }
+
+            await writeData('campaigns', campaigns);
 
             return NextResponse.json({
                 success: true,
