@@ -170,20 +170,13 @@ function BatchContent() {
 
             try {
                 if (turboMode) {
-                    // TURBO MODE: 2 requests per second (Resend rate limit)
-                    // Send 2 emails, then wait 1 second
-                    const batchSize = 2;
-                    const promises = [];
-                    for (let i = 0; i < batchSize; i++) {
-                        promises.push(
-                            fetch('/api/campaigns/process', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ campaignId: selectedCampaign.id, turbo: true })
-                            }).then(r => r.json()).catch(() => ({ status: 'error' }))
-                        );
-                    }
-                    const results = await Promise.all(promises);
+                    // TURBO MODE: 1 request at a time, 500ms delay (2/sec max)
+                    const res = await fetch('/api/campaigns/process', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ campaignId: selectedCampaign.id, turbo: true })
+                    });
+                    const data = await res.json();
 
                     // Refresh UI every 5s (less overhead)
                     if (Date.now() - lastFetch > 5000) {
@@ -191,10 +184,10 @@ function BatchContent() {
                         lastFetch = Date.now();
                     }
 
-                    // Continue after 1 second (respect rate limit)
+                    // Continue after 500ms (2/sec rate limit)
                     processingRef.current = false;
-                    if (active && results.some(r => r.status !== 'completed' && r.status !== 'paused')) {
-                        setTimeout(processNext, 1000); // 1 second = 2/sec rate limit
+                    if (active && data.status !== 'completed' && data.status !== 'paused') {
+                        setTimeout(processNext, 500);
                     } else {
                         await fetchData();
                     }
