@@ -170,8 +170,8 @@ function BatchContent() {
 
             try {
                 if (turboMode) {
-                    // TURBO MODE: 5 parallel requests with small delay to prevent browser freeze
-                    const batchSize = 5;
+                    // TURBO MODE: 10 parallel requests, minimal delay
+                    const batchSize = 10;
                     const promises = [];
                     for (let i = 0; i < batchSize; i++) {
                         promises.push(
@@ -184,16 +184,16 @@ function BatchContent() {
                     }
                     const results = await Promise.all(promises);
 
-                    // Refresh UI every 1s max
-                    if (Date.now() - lastFetch > 1000) {
+                    // Refresh UI every 2s max (less frequent = faster)
+                    if (Date.now() - lastFetch > 2000) {
                         await fetchData();
                         lastFetch = Date.now();
                     }
 
-                    // Continue if any succeeded and not completed - with small delay to prevent freeze
+                    // Continue immediately if not done
                     processingRef.current = false;
                     if (active && results.some(r => r.status !== 'completed' && r.status !== 'paused')) {
-                        setTimeout(processNext, 100); // Small delay to prevent UI freeze
+                        setTimeout(processNext, 10); // Minimal delay
                     } else {
                         await fetchData();
                     }
